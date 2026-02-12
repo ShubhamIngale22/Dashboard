@@ -1,4 +1,4 @@
-const upload = require("../functionality/upload");
+const upload = require("../utility/upload_middleware");
 const dashboard=require("../functionality/dashboard");
 
 module.exports = (app, express) => {
@@ -30,6 +30,10 @@ module.exports = (app, express) => {
 
     api.get('/top5ZoneTable',(req, res) => {
         dashboard.top5ZoneTable(req, res);
+    });
+
+    api.post('/uploadDealerSellExcel', upload.single('file'), (req, res) => {
+        dashboard.uploadDealerSellExcel(req, res).then(()=>{});
     });
 
     return api;

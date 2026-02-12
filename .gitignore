@@ -1,0 +1,25 @@
+# Node modules (VERY IMPORTANT)
+node_modules/
+
+# Environment variables
+.env
+
+# Logs
+*.log
+logger_logs/
+
+# Uploads folder (if files are user-generated)
+uploads/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# npm debug logs
+npm-debug.log*
+
+constant

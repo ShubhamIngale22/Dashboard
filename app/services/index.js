@@ -1,3 +1,3 @@
 module.exports = {
-    dealer: require('./dealer'),
+    smart_tyre_dashboard: require('./smart_tyre_dashboard'),
 }

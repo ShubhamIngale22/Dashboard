@@ -4,6 +4,7 @@ const moment = require("moment");
 const dealer_query = require("../query-provider/dealer")
 const stringConstant = require("../constant/constant");
 const XLSX = require('xlsx');
+const dateHelper=require('../helpers/date_helper');
 
 module.exports={
     getLineChartDealerInstallations: (type) => {
@@ -105,5 +106,43 @@ module.exports={
             console.error(" top5Zones Service error is :",err);
             throw err;
         })
+    },
+
+    uploadDealerSaleExcel:(rows) => {
+
+        const cleanedRows = rows.map(row => {
+            const newRow = {};
+            Object.keys(row).forEach(key => {
+                newRow[key.trim()] = row[key];
+            });
+            return newRow;
+        });
+        const formattedData = cleanedRows.map(row => ({
+                plant: row.plant?.toString().trim(),
+                billingDate: dateHelper.convertExcelDate(row.billingDate),
+                sensorType: row.sensorType,
+                productCode: row.productCode,
+                productDesc: row.productDesc,
+                quantity: Number(row.Quantity || 0),
+                customerCode: row.customerCode?.toString(),
+                dealerShopName: row.dealerShopName,
+                districtName: row.districtName,
+                stateName: row.stateName,
+                cityName: row.cityName,
+                territoryCode: row.territoryCode?.toString(),
+                territoryName: row.territoryName,
+                zone: row.zone,
+                regionName: row.regionName
+            }));
+        return model.dealerSale.insertMany(formattedData, { ordered: false }).then(result => ({
+                success: true,
+                inserted: result.length
+            })).catch(err => {
+                if (err.code === 11000) {
+                    throw new Error("Duplicate file uploaded");
+                }
+                throw err;
+            });
     }
+
 }

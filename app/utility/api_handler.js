@@ -6,7 +6,7 @@ module.exports = {
                 success: state,
                 data: data,
                 message: msg,
-                errorCode: code,
+                successCode: code,
             }
         } else {
             result = {

@@ -8,8 +8,8 @@ module.exports = (app, express) => {
         dashboard.sellsInstallationsLineChart(req, res);
     });
 
-    api.get('/zoneWiseDealerInstallationsPie',(req, res) => {
-        dashboard.zoneWiseDealerInstallationsPie(req, res);
+    api.get('/zoneWiseInstallationsSellsPie',(req, res) => {
+        dashboard.zoneWiseInstallationsSellsPie(req, res);
     });
 
     api.get('/dealerInstallationTable',(req, res) => {

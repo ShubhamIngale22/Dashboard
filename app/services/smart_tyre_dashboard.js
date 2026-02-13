@@ -6,7 +6,7 @@ const XLSX = require('xlsx');
 const dateHelper=require('../helpers/date_helper');
 
 module.exports= {
-    getLineChartDealerInstallations: (type) => {
+    LineChartInstallationSell: (type) => {
         let startDate;
         let format;
 
@@ -21,11 +21,21 @@ module.exports= {
             format = "%Y-%m-%d";
         }
 
-        return model.dealerInstallation.aggregate(smart_tyre_dashboard.getLineChartDealerInstallations(startDate, format)).then((data) => {
-            return Promise.resolve(data)
-        }).catch((err) => {
+        const installationsPromise=model.dealerInstallation.aggregate(
+            smart_tyre_dashboard.getLineChartDealerInstallations(startDate, format)
+        );
+
+        const sellsPromise=model.dealerSell.aggregate(
+            smart_tyre_dashboard.getLineChartDealerSells(startDate, format)
+        );
+
+        return Promise.all([installationsPromise,sellsPromise]).then(([installations,sells])=>{
+            return {
+                installations, sells
+            }
+        }).catch((err)=>{
             return Promise.reject(err);
-        });
+        })
     },
 
     zoneWiseDealerInstallation: (type = "monthly") => {

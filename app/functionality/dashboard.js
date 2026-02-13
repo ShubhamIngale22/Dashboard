@@ -5,14 +5,16 @@ const fs = require('fs');
 const XLSX = require('xlsx');
 
 module.exports = {
-    dealerInstallationLineChart: (req, res) => {
+    sellsInstallationsLineChart: (req, res) => {
         const type=req.query.type || "7days";
 
-        return services.smart_tyre_dashboard.getLineChartDealerInstallations(type).then((data)=>{
+        return services.smart_tyre_dashboard.LineChartInstallationSell(type).then((data)=>{
 
-            const LineChartData=chartFormatter.lineChart(data);
-
-            return res.json(response.JsonMsg(true,LineChartData, "Dealer Installations Data for Line-Chart", 200));
+            const LineChartData = chartFormatter.combinedLineChart(
+                data.installations,
+                data.sells
+            );
+            return res.json(response.JsonMsg(true,LineChartData, "Line-Chart data is fetched.", 200));
         }).catch((err)=>{
             console.error(err);
             return res.json(response.JsonMsg(false, null , "Failed to fetch data", 500));

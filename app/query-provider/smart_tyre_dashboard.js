@@ -36,9 +36,7 @@ module.exports={
                             date: "$billingDate"
                         },
                     },
-                    count: {
-                        $sum: { $toInt: "$quantity" }
-                    }
+                    count: {$sum:"$quantity" }
                 }
             },
             { $sort: { _id: 1 } }
@@ -56,6 +54,34 @@ module.exports={
                 $group:{
                     _id:"$zone",
                     count:{$sum:1}
+                }
+            },
+            {
+                $project:{
+                    _id:0,
+                    zone:"$_id",
+                    count:1
+                }
+            },
+            {
+                $sort:{
+                    count:-1
+                }
+            }
+        ]
+    },
+
+    getZoneWiseDealerSells:(startDate,endDate)=>{
+        return [
+            {
+                $match:{
+                    billingDate:{$gte:startDate , $lte:endDate}
+                }
+            },
+            {
+                $group:{
+                    _id:"$zone",
+                    count:{$sum:"$quantity"}
                 }
             },
             {

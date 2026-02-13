@@ -21,6 +21,30 @@ module.exports={
         ]
     },
 
+    getLineChartDealerSells : (startDate, format) => {
+        return [
+            {
+                $match: {
+                    billingDate: { $gte: startDate }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        $dateToString: {
+                            format: format,
+                            date: "$billingDate"
+                        },
+                    },
+                    count: {
+                        $sum: { $toInt: "$quantity" }
+                    }
+                }
+            },
+            { $sort: { _id: 1 } }
+        ]
+    },
+
     getZoneWiseDealerInstallation:(startDate,endDate)=>{
         return [
             {
@@ -50,7 +74,6 @@ module.exports={
     },
 
     getDealerInstallation : (yesterdayStart,yesterdayEnd,lastMonthStart,lastMonthEnd,lastYearStart,lastYearEnd) => {
-
         return [
             {
                 $facet: {

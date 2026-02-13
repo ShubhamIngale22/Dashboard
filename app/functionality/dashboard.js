@@ -9,22 +9,22 @@ module.exports = {
         const type=req.query.type || "7days";
 
         return services.smart_tyre_dashboard.LineChartInstallationSell(type).then((data)=>{
-
-            const LineChartData = chartFormatter.combinedLineChart(
+            const lineChartData = chartFormatter.combinedLineChart(
                 data.installations,
                 data.sells
             );
-            return res.json(response.JsonMsg(true,LineChartData, "Line-Chart data is fetched.", 200));
+            return res.json(response.JsonMsg(true,lineChartData, "Line-Chart data is fetched.", 200));
         }).catch((err)=>{
             console.error(err);
             return res.json(response.JsonMsg(false, null , "Failed to fetch data", 500));
         })
     },
 
-    zoneWiseDealerInstallationsPie: (req, res) => {
+    zoneWiseInstallationsSellsPie: (req, res) => {
         const type=req.query.type;
 
-        return services.smart_tyre_dashboard.zoneWiseDealerInstallation(type).then((data)=>{
+        return services.smart_tyre_dashboard.zoneWiseInstallationsSells(type).then((data)=>{
+
             return res.json(response.JsonMsg(true, data, "Zone-wise Installations Data", 200));
         }).catch((err)=>{
             console.error(err);

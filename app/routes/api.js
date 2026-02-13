@@ -4,8 +4,8 @@ const dashboard=require("../functionality/dashboard");
 module.exports = (app, express) => {
     let api = express.Router();
 
-    api.get('/dealerInstallationLineChart',(req, res) => {
-        dashboard.dealerInstallationLineChart(req, res);
+    api.get('/sellsInstallationsLineChart',(req, res) => {
+        dashboard.sellsInstallationsLineChart(req, res);
     });
 
     api.get('/zoneWiseDealerInstallationsPie',(req, res) => {

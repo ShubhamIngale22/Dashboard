@@ -12,8 +12,8 @@ module.exports = (app, express) => {
         dashboard.zoneWiseInstallationsSellsPie(req, res);
     });
 
-    api.get('/dealerInstallationTable',(req, res) => {
-        dashboard.dealerInstallationTable(req, res);
+    api.get('/dealerInstallationsSellsTable',(req, res) => {
+        dashboard.dealerInstallationsSellsTable(req, res);
     });
 
     api.get('/top5DealerInstallationTable',(req, res) => {

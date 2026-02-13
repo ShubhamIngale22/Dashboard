@@ -38,7 +38,7 @@ module.exports= {
         })
     },
 
-    zoneWiseDealerInstallation: (type = "monthly") => {
+    zoneWiseInstallationsSells: (type = "monthly") => {
 
         let startDate, endDate;
 
@@ -49,11 +49,21 @@ module.exports= {
             startDate = moment().subtract(1, "month").startOf("month").toDate();
             endDate = moment().subtract(1, "month").endOf("month").toDate();
         }
-        return model.dealerInstallation.aggregate(smart_tyre_dashboard.getZoneWiseDealerInstallation(startDate, endDate)).then(result => {
-            return result;
-        }).catch(err => {
-            console.error("ZoneDealerInstallations service error is :", err);
-            throw err;
+
+        const installationsPromise=model.dealerInstallation.aggregate(
+            smart_tyre_dashboard.getZoneWiseDealerInstallation(startDate,endDate)
+        );
+
+        const sellsPromise=model.dealerSell.aggregate(
+            smart_tyre_dashboard.getZoneWiseDealerSells(startDate,endDate)
+        );
+
+        return Promise.all([installationsPromise,sellsPromise]).then(([installations,sells])=>{
+            return {
+                installations, sells
+            }
+        }).catch((err)=>{
+            return Promise.reject(err);
         })
     },
 

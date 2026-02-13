@@ -25,16 +25,16 @@ module.exports = {
 
         return services.smart_tyre_dashboard.zoneWiseInstallationsSells(type).then((data)=>{
 
-            return res.json(response.JsonMsg(true, data, "Zone-wise Installations Data", 200));
+            return res.json(response.JsonMsg(true, data, "Zone-wise data is fetched.", 200));
         }).catch((err)=>{
             console.error(err);
             return res.json(response.JsonMsg(false, null , "Failed to fetch data", 500));
         })
     },
 
-    dealerInstallationTable: (req, res) => {
-        return services.smart_tyre_dashboard.dealerInstallation().then((data)=>{
-            return res.json(response.JsonMsg(true, data, "Dealer Installations Data", 200));
+    dealerInstallationsSellsTable: (req, res) => {
+        return services.smart_tyre_dashboard.dealerInstallationsSells().then((data)=>{
+            return res.json(response.JsonMsg(true, data, "Dealer Installations and sells data is fetched.", 200));
         }).catch((err)=>{
             console.error(err);
             return res.json(response.JsonMsg(false, null , "Failed to fetch data", 500));

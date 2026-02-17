@@ -160,8 +160,8 @@ module.exports= {
         })
     },
 
-    top5Zone: () => {
-        return model.dealerInstallation.aggregate(smart_tyre_dashboard.getTop5zone()).then(result => {
+    top5Zone: (query) => {
+        return model.dealerInstallation.aggregate(smart_tyre_dashboard.getTop5zone(query)).then(result => {
             return result;
         }).catch(err => {
             console.error(" top5Zones Service error is :", err);

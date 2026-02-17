@@ -298,12 +298,10 @@ module.exports={
         ]
     },
 
-    getTop5zone : () => {
+    getTop5zone : (query) => {
         return [
             {
-                $match: {
-                    zone: { $ne: null }
-                }
+                $match:query
             },
             {
                 $group: {

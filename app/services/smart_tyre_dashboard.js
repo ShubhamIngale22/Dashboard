@@ -142,8 +142,8 @@ module.exports= {
         });
     },
 
-    top5MakeModel: () => {
-        return model.dealerInstallation.aggregate(smart_tyre_dashboard.getTop5MakeModel()).then(result => {
+    top5MakeModel: (query) => {
+        return model.dealerInstallation.aggregate(smart_tyre_dashboard.getTop5MakeModel(query)).then(result => {
             return result;
         }).catch(err => {
             console.error(" top5MakeModel Service error is :", err);

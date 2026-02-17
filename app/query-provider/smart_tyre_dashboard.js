@@ -239,13 +239,10 @@ module.exports={
         ]
     },
 
-    getTop5MakeModel: ()=>{
+    getTop5MakeModel: (query)=>{
         return [
             {
-                $match: {
-                    manufacturerName: { $ne: null },
-                    vehicleModelNo: { $ne: null }
-                }
+                $match: query
             },
             {
                 $group: {

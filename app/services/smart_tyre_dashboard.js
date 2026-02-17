@@ -9,24 +9,28 @@ module.exports= {
     LineChartInstallationSell: (type) => {
         let startDate;
         let format;
+        let sortFormat;
 
         if (type === "1year") {
             startDate = moment().subtract(1, "year").toDate();
-            format = "%Y-%m";
+            format = "%b-%Y";
+            sortFormat="%Y-%m";
         } else if (type === "30days") {
             startDate = moment().subtract(30, "days").toDate();
-            format = "%m-%d";
+            format = "%d-%b";
+            sortFormat="%m-%d";
         } else {
             startDate = moment().subtract(7, "day").toDate();
-            format = "%Y-%m-%d";
+            format = "%d-%b";
+            sortFormat="%Y-%m-%d";
         }
 
         const installationsPromise=model.dealerInstallation.aggregate(
-            smart_tyre_dashboard.getLineChartDealerInstallations(startDate, format)
+            smart_tyre_dashboard.getLineChartDealerInstallations(startDate, format,sortFormat)
         );
 
         const sellsPromise=model.dealerSell.aggregate(
-            smart_tyre_dashboard.getLineChartDealerSells(startDate, format)
+            smart_tyre_dashboard.getLineChartDealerSells(startDate, format,sortFormat)
         );
 
         return Promise.all([installationsPromise,sellsPromise]).then(([installations,sells])=>{

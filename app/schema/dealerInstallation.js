@@ -47,4 +47,5 @@ dealerInstallationSchema.index({status: 1, createdAt: 1}); //Cron - updateDealer
 dealerInstallationSchema.index({scanningQRCodeDetailsId: 1, status: 1}); //API - /v2/releasedSmartTyreTags/:macId || /v1/update/vehicletag/ || /v1/deleteSmartTyre
 dealerInstallationSchema.index({fitterMobileNumber: 1}); //API - /getFitterListForPayment
 dealerInstallationSchema.index({vehicleId: 1, tirePositionId: 1}); //API - /v1/update/vehicletag/
+dealerInstallationSchema.index({customerCode: 1, createAt: 1, dealerShopName: 1});
 

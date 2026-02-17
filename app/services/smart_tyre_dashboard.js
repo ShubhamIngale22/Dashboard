@@ -43,8 +43,8 @@ module.exports= {
         let startDate, endDate;
 
         if (type === "yearly") {
-            startDate = moment().subtract(1, "year").startOf("year").toDate();
-            endDate = moment().subtract(1, "year").endOf("year").toDate();
+            startDate=dateHelper.fyYearStart();
+            endDate = moment().endOf("day").toDate();
         } else {
             startDate = moment().subtract(1, "month").startOf("month").toDate();
             endDate = moment().subtract(1, "month").endOf("month").toDate();
@@ -58,9 +58,17 @@ module.exports= {
             smart_tyre_dashboard.getZoneWiseDealerSells(startDate,endDate)
         );
 
+        const lastMonthLabel=moment().subtract(1,"month").format("MMM-YYYY");
+        const fyYearLabel=dateHelper.fyYearLabel();
+
         return Promise.all([installationsPromise,sellsPromise]).then(([installations,sells])=>{
             return {
-                installations, sells
+                labels:{
+                    lastMonthLabel:lastMonthLabel,
+                    fyYearLabel:fyYearLabel
+                },
+                installations,
+                sells
             }
         }).catch((err)=>{
             return Promise.reject(err);
@@ -75,21 +83,24 @@ module.exports= {
         const lastMonthStart = moment().subtract(1, "month").startOf("month").toDate();
         const lastMonthEnd = moment().subtract(1, "month").endOf("month").toDate();
 
-        const lastYearStart = moment().subtract(1, "year").startOf("year").toDate();
-        const lastYearEnd = moment().subtract(1, "year").endOf("year").toDate();
+        const fyYearStart = dateHelper.fyYearStart();
+        const todayEnd = moment().endOf("day").toDate();
+
+        const lastMonthLabel=moment().subtract(1,"month").format("MMM-YYYY");
+        const fyYearLabel=dateHelper.fyYearLabel();
 
         const installationsPromise=model.dealerInstallation.aggregate(
             smart_tyre_dashboard.getDealerInstallation(
                 yesterdayStart, yesterdayEnd,
                 lastMonthStart, lastMonthEnd,
-                lastYearStart, lastYearEnd)
+                fyYearStart, todayEnd)
         );
 
         const sellsPromise=model.dealerSell.aggregate(
             smart_tyre_dashboard.getDealerSells(
                 yesterdayStart, yesterdayEnd,
                 lastMonthStart, lastMonthEnd,
-                lastYearStart, lastYearEnd)
+                fyYearStart, todayEnd)
         );
 
         return Promise.all([installationsPromise,sellsPromise]).then(([installations,sells]) => {
@@ -97,15 +108,19 @@ module.exports= {
             const sellData = sells?.[0] ?? {};
 
             return {
-                Installations:{
+                labels:{
+                    lastMonthLabel:lastMonthLabel,
+                    fyYearLabel:fyYearLabel
+                },
+                installations:{
                     yesterday: installData.yesterday?.[0]?.count ?? 0,
                     lastMonth: installData.lastMonth?.[0]?.count ?? 0,
-                    lastYear: installData.lastYear?.[0]?.count ?? 0
+                    fyYear: installData.fyYear?.[0]?.count ?? 0
                 },
                 sells:{
                     yesterday: sellData.yesterday?.[0]?.count ?? 0,
                     lastMonth: sellData.lastMonth?.[0]?.count ?? 0,
-                    lastYear: sellData.lastYear?.[0]?.count ?? 0
+                    fyYear: sellData.fyYear?.[0]?.count ?? 0
                 }
             }
         }).catch(err => {

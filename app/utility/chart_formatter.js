@@ -3,17 +3,20 @@ module.exports = {
 
         const installMap = {};
         const sellMap = {};
+        const labelsMap={};
 
         installations.forEach(item => {
             installMap[item._id] = item.count;
+            labelsMap[item._id]=item.displayLabel;
         });
 
         sells.forEach(item => {
             sellMap[item._id] = item.count;
+            labelsMap[item._id]=item.displayLabel;
         });
 
         // Union of all labels
-        const labels = [
+        const sortKeys = [
             ...new Set([
                 ...Object.keys(installMap),
                 ...Object.keys(sellMap)
@@ -21,9 +24,9 @@ module.exports = {
         ].sort();
 
         return {
-            labels,
-            installations: labels.map(label => installMap[label] ?? 0),
-            sells: labels.map(label => sellMap[label] ?? 0)
+            labels:sortKeys.map(k => labelsMap[k]),
+            installations: sortKeys.map(k => installMap[k] ?? 0),
+            sells: sortKeys.map(k => sellMap[k] ?? 0)
         };
     }
 };

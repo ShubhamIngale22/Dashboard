@@ -96,7 +96,24 @@ module.exports = {
 
     top5regionTable: (req, res) => {
 
-        return services.smart_tyre_dashboard.top5region().then((data)=>{
+        let type = req.query.type;
+        let startDate,endDate;
+        let query ={
+            regionName: { $ne: null },
+            customerCode: {$ne: null}
+        };
+
+        if (type === "monthly") {
+            startDate = moment().subtract(1, "month").startOf("month").toDate();
+            endDate = moment().subtract(1, "month").endOf("month").toDate();
+            Object.assign(query, {createdAt: {$gte: startDate, $lte: endDate}});
+        } else if (type === "fy") {
+            startDate = dateHelper.fyYearStart();
+            endDate = moment().endOf("day").toDate();
+            Object.assign(query, {createdAt: { $gte: startDate, $lte: endDate }});
+        }
+
+        return services.smart_tyre_dashboard.top5region(query).then((data)=>{
             return res.json(response.JsonMsg(true,data, "Dealer Installations Data for top 5 regions", 200));
         }).catch((err)=>{
             console.error(err);

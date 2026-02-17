@@ -270,12 +270,10 @@ module.exports={
         ]
     },
 
-    getTop5region : () => {
+    getTop5region : (query) => {
         return [
             {
-                $match: {
-                    regionName: { $ne: null }
-                }
+                $match:query
             },
             {
                 $group: {

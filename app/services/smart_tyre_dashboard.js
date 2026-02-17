@@ -151,8 +151,8 @@ module.exports= {
         })
     },
 
-    top5region: () => {
-        return model.dealerInstallation.aggregate(smart_tyre_dashboard.getTop5region()).then(result => {
+    top5region: (query) => {
+        return model.dealerInstallation.aggregate(smart_tyre_dashboard.getTop5region(query)).then(result => {
             return result;
         }).catch(err => {
             console.error("top5regions service error is :", err);

@@ -104,7 +104,7 @@ module.exports={
     getDealerInstallation : (
         yesterdayStart,yesterdayEnd,
         lastMonthStart,lastMonthEnd,
-        lastYearStart,lastYearEnd) => {
+        fyYearStart,todayEnd) => {
         return [
             {
                 $facet: {
@@ -114,7 +114,7 @@ module.exports={
                                 installationDate: {
                                     $gte: yesterdayStart,
                                     $lte: yesterdayEnd
-                                }
+                                },
                             }
 
                         },
@@ -133,12 +133,12 @@ module.exports={
                         { $count: "count" }
                     ],
 
-                    lastYear: [
+                    fyYear: [
                         {
                             $match: {
                                 installationDate: {
-                                    $gte: lastYearStart,
-                                    $lte: lastYearEnd
+                                    $gte: fyYearStart,
+                                    $lte: todayEnd
                                 }
                             }
                         },
@@ -152,7 +152,7 @@ module.exports={
     getDealerSells : (
         yesterdayStart,yesterdayEnd,
         lastMonthStart,lastMonthEnd,
-        lastYearStart,lastYearEnd) => {
+        fyYearStart,todayEnd) => {
         return [
             {
                 $facet: {
@@ -190,12 +190,12 @@ module.exports={
                         }
                     ],
 
-                    lastYear: [
+                    fyYear: [
                         {
                             $match: {
                                 billingDate: {
-                                    $gte: lastYearStart,
-                                    $lte: lastYearEnd
+                                    $gte: fyYearStart,
+                                    $lte: todayEnd
                                 }
                             }
                         },

@@ -3,6 +3,8 @@ const chartFormatter = require("../utility/chart_formatter");
 const services = require('../services/index');
 const fs = require('fs');
 const XLSX = require('xlsx');
+const moment = require("moment/moment");
+const dateHelper = require("../helpers/date_helper");
 
 module.exports = {
     sellsInstallationsLineChart: (req, res) => {
@@ -42,8 +44,21 @@ module.exports = {
     },
 
     top5DealerInstallationTable: (req, res) => {
+        let type = req.query.type;
+        let startDate,endDate;
+        let query = {customerCode: {$ne: null}};
 
-        return services.smart_tyre_dashboard.top5DealerInstallation().then((data)=>{
+        if (type === "monthly") {
+            startDate = moment().subtract(1, "month").startOf("month").toDate();
+            endDate = moment().subtract(1, "month").endOf("month").toDate();
+            Object.assign(query, {createdAt: {$gte: startDate, $lte: endDate}});
+        } else if (type === "fy") {
+            startDate = dateHelper.fyYearStart();
+            endDate = moment().endOf("day").toDate();
+            Object.assign(query, {createdAt: { $gte: startDate, $lte: endDate }});
+        }
+
+        return services.smart_tyre_dashboard.top5DealerInstallation(query).then((data)=>{
             return res.json(response.JsonMsg(true,data, "Dealer Installations Data for top 5 regions", 200));
         }).catch((err)=>{
             console.error(err);

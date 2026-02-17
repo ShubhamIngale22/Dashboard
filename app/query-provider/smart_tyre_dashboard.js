@@ -207,16 +207,17 @@ module.exports={
         ]
     },
 
-    getTop5DealerInstallation: () => {
+    getTop5DealerInstallation: (query) => {
         return [
             {
-                $match: {
-                    dealerShopName: { $ne: null }
-                }
+                $match: query
             },
             {
                 $group: {
-                    _id: "$dealerShopName",
+                    _id: {
+                        customerCode: "$customerCode",
+                        dealerShopName: "$dealerShopName"
+                    },
                     count: { $sum: 1 }
                 },
             },
@@ -229,7 +230,8 @@ module.exports={
             {
                 $project:{
                     _id:0,
-                    dealerShopName:"$_id",
+                    dealerShopName: "$_id.dealerShopName",
+                    customerCode: "$_id.customerCode",
                     count:1
                 }
             }

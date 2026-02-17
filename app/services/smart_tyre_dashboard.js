@@ -133,13 +133,13 @@ module.exports= {
         })
     },
 
-    top5DealerInstallation: () => {
-        return model.dealerInstallation.aggregate(smart_tyre_dashboard.getTop5DealerInstallation()).then(result => {
+    top5DealerInstallation: (query) => {
+        return model.dealerInstallation.aggregate(smart_tyre_dashboard.getTop5DealerInstallation(query)).then(result => {
             return result;
         }).catch(err => {
             console.error(" top5DealerInstallations Service error is :", err);
             throw err;
-        })
+        });
     },
 
     top5MakeModel: () => {

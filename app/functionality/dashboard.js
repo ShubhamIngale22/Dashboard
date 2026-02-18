@@ -51,11 +51,11 @@ module.exports = {
         if (type === "monthly") {
             startDate = moment().subtract(1, "month").startOf("month").toDate();
             endDate = moment().subtract(1, "month").endOf("month").toDate();
-            Object.assign(query, {createdAt: {$gte: startDate, $lte: endDate}});
-        } else if (type === "fy") {
+            Object.assign(query, {installationDate: {$gte: startDate, $lte: endDate}});
+        } else if (type === "Finance Year") {
             startDate = dateHelper.fyYearStart();
             endDate = moment().endOf("day").toDate();
-            Object.assign(query, {createdAt: { $gte: startDate, $lte: endDate }});
+            Object.assign(query, {installationDate: { $gte: startDate, $lte: endDate }});
         }
 
         return services.smart_tyre_dashboard.top5DealerInstallation(query).then((data)=>{
@@ -75,15 +75,14 @@ module.exports = {
             vehicleModelNo: { $ne: null },
             customerCode: {$ne: null}
         };
-
         if (type === "monthly") {
             startDate = moment().subtract(1, "month").startOf("month").toDate();
             endDate = moment().subtract(1, "month").endOf("month").toDate();
-            Object.assign(query, {createdAt: {$gte: startDate, $lte: endDate}});
-        } else if (type === "fy") {
+            Object.assign(query, {installationDate: {$gte: startDate, $lte: endDate}});
+        } else if (type === "Finance Year") {
             startDate = dateHelper.fyYearStart();
             endDate = moment().endOf("day").toDate();
-            Object.assign(query, {createdAt: { $gte: startDate, $lte: endDate }});
+            Object.assign(query, {installationDate: { $gte: startDate, $lte: endDate }});
         }
 
         return services.smart_tyre_dashboard.top5MakeModel(query).then((data)=>{
@@ -106,11 +105,11 @@ module.exports = {
         if (type === "monthly") {
             startDate = moment().subtract(1, "month").startOf("month").toDate();
             endDate = moment().subtract(1, "month").endOf("month").toDate();
-            Object.assign(query, {createdAt: {$gte: startDate, $lte: endDate}});
-        } else if (type === "fy") {
+            Object.assign(query, {installationDate: {$gte: startDate, $lte: endDate}});
+        } else if (type === "Finance Year") {
             startDate = dateHelper.fyYearStart();
             endDate = moment().endOf("day").toDate();
-            Object.assign(query, {createdAt: { $gte: startDate, $lte: endDate }});
+            Object.assign(query, {installationDate: { $gte: startDate, $lte: endDate }});
         }
 
         return services.smart_tyre_dashboard.top5region(query).then((data)=>{
@@ -133,11 +132,11 @@ module.exports = {
         if (type === "monthly") {
             startDate = moment().subtract(1, "month").startOf("month").toDate();
             endDate = moment().subtract(1, "month").endOf("month").toDate();
-            Object.assign(query, {createdAt: {$gte: startDate, $lte: endDate}});
-        } else if (type === "fy") {
+            Object.assign(query, {installationDate: {$gte: startDate, $lte: endDate}});
+        } else if (type === "Finance Year") {
             startDate = dateHelper.fyYearStart();
             endDate = moment().endOf("day").toDate();
-            Object.assign(query, {createdAt: { $gte: startDate, $lte: endDate }});
+            Object.assign(query, {installationDate: { $gte: startDate, $lte: endDate }});
         }
 
         return services.smart_tyre_dashboard.top5Zone(query).then((data)=>{
@@ -184,19 +183,16 @@ module.exports = {
 
         return services.smart_tyre_dashboard.uploadDealerSellExcel(rows)
             .then(result => {
-
                 deleteFile(req.file.path);
                 return res.json(
                     response.JsonMsg(true, result.length, "Excel uploaded successfully", 200)
                 );
             })
             .catch(err => {
-
                 deleteFile(req.file.path);
                 return res.json(
                     response.JsonMsg(false, null, err.message, 400)
                 );
             });
     }
-
 }

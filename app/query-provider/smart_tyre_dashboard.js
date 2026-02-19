@@ -1,3 +1,26 @@
+// ─── GENERIC TOP 5 BUILDER ────────────────────────────────────────────────────
+const buildTop5Pipeline = (query, groupId, projectFields) => {
+    return [
+        { $match: query },
+        {
+            $group: {
+                _id: groupId,
+                count: { $sum: 1 }
+            }
+        },
+        { $sort: { count: -1 } },
+        { $limit: 5 },
+        {
+            $project: {
+                _id: 0,
+                ...projectFields,
+                count: 1
+            }
+        }
+    ];
+};
+
+
 module.exports={
     getLineChartDealerInstallations: (startDate, format, sortFormat) => {
         return [
@@ -116,122 +139,36 @@ module.exports={
         ]
     },
 
+    // ─── TOP 5 PIPELINES ──────────────────────────────────────────────────────────
     getTop5DealerInstallation: (query) => {
-        return [
-            {
-                $match: query
-            },
-            {
-                $group: {
-                    _id: {
-                        customerCode: "$customerCode",
-                        dealerShopName: "$dealerShopName"
-                    },
-                    count: { $sum: 1 }
-                },
-            },
-            {
-                $sort: {count:-1}
-            },
-            {
-                $limit:5
-            },
-            {
-                $project:{
-                    _id:0,
-                    dealerShopName: "$_id.dealerShopName",
-                    customerCode: "$_id.customerCode",
-                    count:1
-                }
-            }
-
-        ]
+        return buildTop5Pipeline(
+            query,
+            { customerCode: "$customerCode", dealerShopName: "$dealerShopName" },
+            { customerCode: "$_id.customerCode", dealerShopName: "$_id.dealerShopName" }
+        );
     },
 
-    getTop5MakeModel: (query)=>{
-        return [
-            {
-                $match: query
-            },
-            {
-                $group: {
-                    _id:{
-                        make:"$manufacturerName",
-                        model:"$vehicleModelNo"
-                    } ,
-                    count: { $sum: 1 }
-                },
-            },
-            {
-                $sort: {count:-1}
-            },
-            {
-                $limit:5
-            },
-            {
-                $project:{
-                    _id:0,
-                    make:"$_id.make",
-                    model:"$_id.model",
-                    count:1
-                }
-            }
-        ]
+    getTop5MakeModel: (query) => {
+        return buildTop5Pipeline(
+            query,
+            { make: "$manufacturerName", model: "$vehicleModelNo" },
+            { make: "$_id.make", model: "$_id.model" }
+        );
     },
 
-    getTop5region : (query) => {
-        return [
-            {
-                $match:query
-            },
-            {
-                $group: {
-                    _id: "$regionName",
-                    count: { $sum: 1 }
-                },
-            },
-            {
-                $sort: {count:-1}
-            },
-            {
-                $limit:5
-            },
-            {
-                $project: {
-                    _id: 0,
-                    regionName: "$_id",
-                    count: 1
-                }
-            }
-
-        ]
+    getTop5region: (query) => {
+        return buildTop5Pipeline(
+            query,
+            "$regionName",
+            { regionName: "$_id" }
+        );
     },
 
-    getTop5zone : (query) => {
-        return [
-            {
-                $match:query
-            },
-            {
-                $group: {
-                    _id: "$zone",
-                    count: { $sum: 1 }
-                },
-            },
-            {
-                $sort: {count:-1}
-            },
-            {
-                $limit:5
-            },
-            {
-                $project: {
-                    _id: 0,
-                    zone: "$_id",
-                    count: 1
-                }
-            }
-        ]
+    getTop5zone: (query) => {
+        return buildTop5Pipeline(
+            query,
+            "$zone",
+            { zone: "$_id" }
+        );
     }
-
 }

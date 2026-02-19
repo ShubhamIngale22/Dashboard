@@ -40,12 +40,14 @@ const dealerInstallationSchema = new Schema({
     fitterIncentiveAmount: {type: Number, default: constant.fitterAmount},
 },{timestamps: true, versionKey: false});
 
+dealerInstallationSchema.index({ installationDate: 1 });
+dealerInstallationSchema.index({ installationDate: 1, zone: 1 });// Zone-wise pie chart
+dealerInstallationSchema.index({ installationDate: 1, customerCode: 1 });// Top 5 dealers — getTop5DealerInstallation
+dealerInstallationSchema.index({ installationDate: 1, customerCode: 1, manufacturerName: 1, vehicleModelNo: 1 });// Top 5 make/model — getTop5MakeModel
+dealerInstallationSchema.index({ installationDate: 1, customerCode: 1, regionName: 1 });// Top 5 regions — getTop5region
+dealerInstallationSchema.index({ installationDate: 1, customerCode: 1, zone: 1 });// Top 5 zones — getTop5zone
+
 module.exports = mongoose.model('t_dealerInstallation', dealerInstallationSchema);
 
-dealerInstallationSchema.index({scanningQRCodeDetailsId: 1}, {unique: true});
-dealerInstallationSchema.index({status: 1, createdAt: 1}); //Cron - updateDealerTransactionData
-dealerInstallationSchema.index({scanningQRCodeDetailsId: 1, status: 1}); //API - /v2/releasedSmartTyreTags/:macId || /v1/update/vehicletag/ || /v1/deleteSmartTyre
-dealerInstallationSchema.index({fitterMobileNumber: 1}); //API - /getFitterListForPayment
-dealerInstallationSchema.index({vehicleId: 1, tirePositionId: 1}); //API - /v1/update/vehicletag/
-dealerInstallationSchema.index({customerCode: 1, createAt: 1, dealerShopName: 1});
+
 

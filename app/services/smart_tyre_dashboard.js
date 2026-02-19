@@ -18,7 +18,7 @@ module.exports= {
         } else if (type === "30days") {
             startDate = moment().subtract(30, "days").toDate();
             format = "%d-%b";
-            sortFormat="%m-%d";
+            sortFormat="%Y-%m-%d";
         } else {
             startDate = moment().subtract(7, "day").toDate();
             format = "%d-%b";

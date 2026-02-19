@@ -24,5 +24,8 @@ const sellsBillingSchema = new Schema({
     versionKey: false
 });
 
+sellsBillingSchema.index({ billingDate: 1 });// LineChart — getLineChartDealerSells
+sellsBillingSchema.index({ billingDate: 1, zone: 1 });// Zone-wise pie chart — getZoneWiseDealerSells
+
 module.exports = mongoose.model('t_dealerSell', sellsBillingSchema);
 

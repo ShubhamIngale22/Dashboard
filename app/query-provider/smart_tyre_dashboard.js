@@ -97,111 +97,20 @@ module.exports={
         ]
     },
 
-    getDealerInstallation : (
-        yesterdayStart,yesterdayEnd,
-        lastMonthStart,lastMonthEnd,
-        fyYearStart,todayEnd) => {
+    getInstallationCount: (query) => {
         return [
-            {
-                $facet: {
-                    yesterday: [
-                        {
-                            $match: {
-                                installationDate: {
-                                    $gte: yesterdayStart,
-                                    $lte: yesterdayEnd
-                                },
-                            }
-
-                        },
-                        { $count: "count" }
-                    ],
-
-                    lastMonth: [
-                        {
-                            $match: {
-                                installationDate: {
-                                    $gte: lastMonthStart,
-                                    $lte: lastMonthEnd
-                                }
-                            }
-                        },
-                        { $count: "count" }
-                    ],
-
-                    fyYear: [
-                        {
-                            $match: {
-                                installationDate: {
-                                    $gte: fyYearStart,
-                                    $lte: todayEnd
-                                }
-                            }
-                        },
-                        { $count: "count" }
-                    ]
-                }
-            }
+            { $match: query },
+            { $count: "count" }
         ]
     },
 
-    getDealerSells : (
-        yesterdayStart,yesterdayEnd,
-        lastMonthStart,lastMonthEnd,
-        fyYearStart,todayEnd) => {
+    getSellsCount: (query) => {
         return [
+            { $match: query },
             {
-                $facet: {
-                    yesterday: [
-                        {
-                            $match: {
-                                billingDate: {
-                                    $gte: yesterdayStart,
-                                    $lte: yesterdayEnd
-                                }
-                            }
-                        },
-                        {
-                            $group:{
-                                _id:null,
-                                count: { $sum: "$quantity" }
-                            }
-                        }
-                    ],
-
-                    lastMonth: [
-                        {
-                            $match: {
-                                billingDate: {
-                                    $gte: lastMonthStart,
-                                    $lte: lastMonthEnd
-                                }
-                            }
-                        },
-                        {
-                            $group:{
-                                _id:null,
-                                count: { $sum: "$quantity" }
-                            }
-                        }
-                    ],
-
-                    fyYear: [
-                        {
-                            $match: {
-                                billingDate: {
-                                    $gte: fyYearStart,
-                                    $lte: todayEnd
-                                }
-                            }
-                        },
-                        {
-                            $group:{
-                                _id:null,
-                                count: { $sum: "$quantity" }
-                            }
-                        }
-                    ]
+                $group: {
+                    _id: null,
+                    count: { $sum: "$quantity" }
                 }
             }
         ]

@@ -35,12 +35,55 @@ module.exports = {
     },
 
     dealerInstallationsSellsTable: (req, res) => {
-        return services.smart_tyre_dashboard.dealerInstallationsSells().then((data)=>{
+        const now = moment();
+
+        const yesterdayStart = now.clone().subtract(1, "day").startOf("day").toDate();
+        const yesterdayEnd   = now.clone().subtract(1, "day").endOf("day").toDate();
+        const lastMonthStart = now.clone().subtract(1, "month").startOf("month").toDate();
+        const lastMonthEnd   = now.clone().subtract(1, "month").endOf("month").toDate();
+        const fyYearStart    = dateHelper.fyYearStart();
+        const todayEnd       = now.clone().endOf("day").toDate();
+
+        const lastMonthLabel = now.clone().subtract(1, "month").format("MMM-YYYY");
+        const fyYearLabel    = dateHelper.fyYearLabel();
+
+        const yesterdayQuery    = { installationDate: { $gte: yesterdayStart, $lte: yesterdayEnd } };
+        const lastMonthQuery    = { installationDate: { $gte: lastMonthStart, $lte: lastMonthEnd } };
+        const fyYearQuery       = { installationDate: { $gte: fyYearStart,    $lte: todayEnd     } };
+
+        const yesterdaySellQuery = { billingDate: { $gte: yesterdayStart, $lte: yesterdayEnd } };
+        const lastMonthSellQuery = { billingDate: { $gte: lastMonthStart, $lte: lastMonthEnd } };
+        const fyYearSellQuery    = { billingDate: { $gte: fyYearStart,    $lte: todayEnd     } };
+
+        return Promise.all([
+            services.smart_tyre_dashboard.getInstallationCount(yesterdayQuery),
+            services.smart_tyre_dashboard.getInstallationCount(lastMonthQuery),
+            services.smart_tyre_dashboard.getInstallationCount(fyYearQuery),
+            services.smart_tyre_dashboard.getSellsCount(yesterdaySellQuery),
+            services.smart_tyre_dashboard.getSellsCount(lastMonthSellQuery),
+            services.smart_tyre_dashboard.getSellsCount(fyYearSellQuery),
+        ]).then(([iYesterday, iLastMonth, iFyYear, sYesterday, sLastMonth, sFyYear]) => {
+            const data = {
+                labels: {
+                    lastMonthLabel,
+                    fyYearLabel
+                },
+                installations: {
+                    yesterday: iYesterday[0]?.count ?? 0,
+                    lastMonth: iLastMonth[0]?.count ?? 0,
+                    fyYear:    iFyYear[0]?.count    ?? 0
+                },
+                sells: {
+                    yesterday: sYesterday[0]?.count ?? 0,
+                    lastMonth: sLastMonth[0]?.count ?? 0,
+                    fyYear:    sFyYear[0]?.count    ?? 0
+                }
+            };
             return res.json(response.JsonMsg(true, data, "Dealer Installations and sells data is fetched.", 200));
-        }).catch((err)=>{
+        }).catch((err) => {
             console.error(err);
-            return res.json(response.JsonMsg(false, null , "Failed to fetch data", 500));
-        })
+            return res.json(response.JsonMsg(false, null, "Failed to fetch data", 500));
+        });
     },
 
     top5DealerInstallationTable: (req, res) => {

@@ -1,8 +1,6 @@
 const model = require('../models/models');
-const constants = require(`../constant/constant`);
 const moment = require("moment");
 const smart_tyre_dashboard = require("../query-provider/smart_tyre_dashboard");
-const XLSX = require('xlsx');
 const dateHelper=require('../helpers/date_helper');
 
 module.exports= {
@@ -79,58 +77,16 @@ module.exports= {
         })
     },
 
-    dealerInstallationsSells: () => {
-
-        const yesterdayStart = moment().subtract(1, "day").startOf("day").toDate();
-        const yesterdayEnd = moment().subtract(1, "day").endOf("day").toDate();
-
-        const lastMonthStart = moment().subtract(1, "month").startOf("month").toDate();
-        const lastMonthEnd = moment().subtract(1, "month").endOf("month").toDate();
-
-        const fyYearStart = dateHelper.fyYearStart();
-        const todayEnd = moment().endOf("day").toDate();
-
-        const lastMonthLabel=moment().subtract(1,"month").format("MMM-YYYY");
-        const fyYearLabel=dateHelper.fyYearLabel();
-
-        const installationsPromise=model.dealerInstallation.aggregate(
-            smart_tyre_dashboard.getDealerInstallation(
-                yesterdayStart, yesterdayEnd,
-                lastMonthStart, lastMonthEnd,
-                fyYearStart, todayEnd)
+    getInstallationCount: (query) => {
+        return model.dealerInstallation.aggregate(
+            smart_tyre_dashboard.getInstallationCount(query)
         );
+    },
 
-        const sellsPromise=model.dealerSell.aggregate(
-            smart_tyre_dashboard.getDealerSells(
-                yesterdayStart, yesterdayEnd,
-                lastMonthStart, lastMonthEnd,
-                fyYearStart, todayEnd)
+    getSellsCount: (query) => {
+        return model.dealerSell.aggregate(
+            smart_tyre_dashboard.getSellsCount(query)
         );
-
-        return Promise.all([installationsPromise,sellsPromise]).then(([installations,sells]) => {
-            const installData = installations?.[0] ?? {};
-            const sellData = sells?.[0] ?? {};
-
-            return {
-                labels:{
-                    lastMonthLabel:lastMonthLabel,
-                    fyYearLabel:fyYearLabel
-                },
-                installations:{
-                    yesterday: installData.yesterday?.[0]?.count ?? 0,
-                    lastMonth: installData.lastMonth?.[0]?.count ?? 0,
-                    fyYear: installData.fyYear?.[0]?.count ?? 0
-                },
-                sells:{
-                    yesterday: sellData.yesterday?.[0]?.count ?? 0,
-                    lastMonth: sellData.lastMonth?.[0]?.count ?? 0,
-                    fyYear: sellData.fyYear?.[0]?.count ?? 0
-                }
-            }
-        }).catch(err => {
-            console.error("totalDealerInstallations service error is :", err);
-            throw err;
-        })
     },
 
     top5DealerInstallation: (query) => {

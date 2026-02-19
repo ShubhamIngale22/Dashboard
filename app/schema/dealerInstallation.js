@@ -41,6 +41,7 @@ const dealerInstallationSchema = new Schema({
 },{timestamps: true, versionKey: false});
 
 dealerInstallationSchema.index({ installationDate: 1 });
+dealerInstallationSchema.index({ installationDate: 1,_id:1 }); // summary table
 dealerInstallationSchema.index({ installationDate: 1, zone: 1 });// Zone-wise pie chart
 dealerInstallationSchema.index({ installationDate: 1, customerCode: 1 });// Top 5 dealers — getTop5DealerInstallation
 dealerInstallationSchema.index({ installationDate: 1, customerCode: 1, manufacturerName: 1, vehicleModelNo: 1 });// Top 5 make/model — getTop5MakeModel

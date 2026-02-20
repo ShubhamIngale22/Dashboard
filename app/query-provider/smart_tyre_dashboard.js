@@ -1,26 +1,3 @@
-// ─── GENERIC TOP 5 BUILDER ────────────────────────────────────────────────────
-const buildTop5Pipeline = (query, groupId, projectFields) => {
-    return [
-        { $match: query },
-        {
-            $group: {
-                _id: groupId,
-                count: { $sum: 1 }
-            }
-        },
-        { $sort: { count: -1 } },
-        { $limit: 5 },
-        {
-            $project: {
-                _id: 0,
-                ...projectFields,
-                count: 1
-            }
-        }
-    ];
-};
-
-
 module.exports={
     getLineChartDealerInstallations: (startDate, format, sortFormat) => {
         return [
@@ -140,35 +117,24 @@ module.exports={
     },
 
     // ─── TOP 5 PIPELINES ──────────────────────────────────────────────────────────
-    getTop5DealerInstallation: (query) => {
-        return buildTop5Pipeline(
-            query,
-            { customerCode: "$customerCode", dealerShopName: "$dealerShopName" },
-            { customerCode: "$_id.customerCode", dealerShopName: "$_id.dealerShopName" }
-        );
-    },
-
-    getTop5MakeModel: (query) => {
-        return buildTop5Pipeline(
-            query,
-            { make: "$manufacturerName", model: "$vehicleModelNo" },
-            { make: "$_id.make", model: "$_id.model" }
-        );
-    },
-
-    getTop5region: (query) => {
-        return buildTop5Pipeline(
-            query,
-            "$regionName",
-            { regionName: "$_id" }
-        );
-    },
-
-    getTop5zone: (query) => {
-        return buildTop5Pipeline(
-            query,
-            "$zone",
-            { zone: "$_id" }
-        );
+    getTop5SmartTyreInstallation: (query, groupId, projection) => {
+        return [
+            {$match: query},
+            {
+                $group: {
+                    _id: groupId,
+                    count: {$sum: 1}
+                }
+            },
+            {$sort: {count: -1}},
+            {$limit: 5},
+            {
+                $project: {
+                    _id: 0,
+                    ...projection,
+                    count: 1
+                }
+            }
+        ];
     }
 }

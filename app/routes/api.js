@@ -16,26 +16,13 @@ module.exports = (app, express) => {
         dashboard.dealerInstallationsSellsTable(req, res);
     });
 
-    api.get('/top5DealerInstallationTable',(req, res) => {
-        dashboard.top5DealerInstallationTable(req, res);
-    });
-
-    api.get('/top5MakeModelTable',(req, res) => {
-        dashboard.top5MakeModelTable(req, res);
-    });
-
-    api.get('/top5regionTable',(req, res) => {
-        dashboard.top5regionTable(req, res);
-    });
-
-    api.get('/top5ZoneTable',(req, res) => {
-        dashboard.top5ZoneTable(req, res);
+    api.get('/getTop5SmartTyreInstallation',(req, res) => {
+        dashboard.getTop5SmartTyreInstallation(req, res);
     });
 
     api.post('/uploadDealerSellExcel', upload.single('file'), (req, res) => {
         dashboard.uploadDealerSellExcel(req, res).then(()=>{});
     });
-
     return api;
 }
 

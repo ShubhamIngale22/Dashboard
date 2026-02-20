@@ -4,7 +4,7 @@ const smart_tyre_dashboard = require("../query-provider/smart_tyre_dashboard");
 const dateHelper=require('../helpers/date_helper');
 
 module.exports= {
-    LineChartInstallationSell: (type) => {
+    sellsInstallationsLineChart: (type) => {
         let startDate;
         let format;
         let sortFormat;
@@ -40,7 +40,7 @@ module.exports= {
         })
     },
 
-    zoneWiseInstallationsSells: (type = "monthly") => {
+    zoneWiseInstallationsSellsPie: (type = "monthly") => {
 
         let startDate, endDate;
 
@@ -89,40 +89,13 @@ module.exports= {
         );
     },
 
-    top5DealerInstallation: (query) => {
-        return model.dealerInstallation.aggregate(smart_tyre_dashboard.getTop5DealerInstallation(query)).then(result => {
+    getTop5SmartTyreInstallation: (query,groupId, projection) => {
+        return model.dealerInstallation.aggregate(smart_tyre_dashboard.getTop5SmartTyreInstallation(query,groupId, projection)).then(result => {
             return result;
         }).catch(err => {
             console.error(" top5DealerInstallations Service error is :", err);
             throw err;
         });
-    },
-
-    top5MakeModel: (query) => {
-        return model.dealerInstallation.aggregate(smart_tyre_dashboard.getTop5MakeModel(query)).then(result => {
-            return result;
-        }).catch(err => {
-            console.error(" top5MakeModel Service error is :", err);
-            throw err;
-        })
-    },
-
-    top5region: (query) => {
-        return model.dealerInstallation.aggregate(smart_tyre_dashboard.getTop5region(query)).then(result => {
-            return result;
-        }).catch(err => {
-            console.error("top5regions service error is :", err);
-            throw err;
-        })
-    },
-
-    top5Zone: (query) => {
-        return model.dealerInstallation.aggregate(smart_tyre_dashboard.getTop5zone(query)).then(result => {
-            return result;
-        }).catch(err => {
-            console.error(" top5Zones Service error is :", err);
-            throw err;
-        })
     },
 
     uploadDealerSellExcel: (rows) => {

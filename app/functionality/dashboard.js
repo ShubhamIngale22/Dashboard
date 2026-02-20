@@ -10,7 +10,7 @@ module.exports = {
     sellsInstallationsLineChart: (req, res) => {
         const type=req.query.type || "7days";
 
-        return services.smart_tyre_dashboard.LineChartInstallationSell(type).then((data)=>{
+        return services.smart_tyre_dashboard.sellsInstallationsLineChart(type).then((data)=>{
             const lineChartData = chartFormatter.combinedLineChart(
                 data.installations,
                 data.sells
@@ -25,7 +25,7 @@ module.exports = {
     zoneWiseInstallationsSellsPie: (req, res) => {
         const type=req.query.type;
 
-        return services.smart_tyre_dashboard.zoneWiseInstallationsSells(type).then((data)=>{
+        return services.smart_tyre_dashboard.zoneWiseInstallationsSellsPie(type).then((data)=>{
 
             return res.json(response.JsonMsg(true, data, "Zone-wise data is fetched.", 200));
         }).catch((err)=>{
@@ -86,10 +86,31 @@ module.exports = {
         });
     },
 
-    top5DealerInstallationTable: (req, res) => {
+    getTop5SmartTyreInstallation: (req, res) => {
+        let filter = req.query.filter;
         let type = req.query.type;
         let startDate,endDate;
         let query = {customerCode: {$ne: null}};
+        let groupId = {};
+        let projection = {};
+
+        if(filter === "Dealers"){
+            query = {customerCode: {$ne: null}};
+            groupId = { customerCode: "$customerCode", dealerShopName: "$dealerShopName" };
+            projection = { customerCode: "$_id.customerCode", dealerShopName: "$_id.dealerShopName" };
+        }else if(filter === "Zones"){
+            query ={zone: { $ne: null }, customerCode: {$ne: null}};
+            groupId = "$zone";
+            projection =  { zone: "$_id" }
+        }else if(filter === "Regions"){
+            query ={regionName: { $ne: null }, customerCode: {$ne: null}};
+            groupId = "$regionName";
+            projection =  { regionName: "$_id" }
+        }else if(filter === "MakeModels"){
+            query ={manufacturerName: { $ne: null }, vehicleModelNo: { $ne: null }, customerCode: {$ne: null}};
+            groupId = { make: "$manufacturerName", model: "$vehicleModelNo" };
+            projection ={ make: "$_id.make", model: "$_id.model" }
+        }
 
         if (type === "monthly") {
             startDate = moment().subtract(1, "month").startOf("month").toDate();
@@ -100,90 +121,8 @@ module.exports = {
             endDate = moment().endOf("day").toDate();
             Object.assign(query, {installationDate: { $gte: startDate, $lte: endDate }});
         }
-
-        return services.smart_tyre_dashboard.top5DealerInstallation(query).then((data)=>{
+        return services.smart_tyre_dashboard.getTop5SmartTyreInstallation(query,groupId, projection).then((data)=>{
             return res.json(response.JsonMsg(true,data, "Dealer Installations Data for top 5 regions", 200));
-        }).catch((err)=>{
-            console.error(err);
-            return res.json(response.JsonMsg(false, null , "Failed to fetch data", 500));
-        })
-    },
-
-    top5MakeModelTable: (req, res) => {
-
-        let type = req.query.type;
-        let startDate,endDate;
-        let query ={
-            manufacturerName: { $ne: null },
-            vehicleModelNo: { $ne: null },
-            customerCode: {$ne: null}
-        };
-        if (type === "monthly") {
-            startDate = moment().subtract(1, "month").startOf("month").toDate();
-            endDate = moment().subtract(1, "month").endOf("month").toDate();
-            Object.assign(query, {installationDate: {$gte: startDate, $lte: endDate}});
-        } else if (type === "Finance Year") {
-            startDate = dateHelper.fyYearStart();
-            endDate = moment().endOf("day").toDate();
-            Object.assign(query, {installationDate: { $gte: startDate, $lte: endDate }});
-        }
-
-        return services.smart_tyre_dashboard.top5MakeModel(query).then((data)=>{
-            return res.json(response.JsonMsg(true,data, "Dealer Installations Data for top 5 regions", 200));
-        }).catch((err)=>{
-            console.error(err);
-            return res.json(response.JsonMsg(false, null , "Failed to fetch data", 500));
-        })
-    },
-
-    top5regionTable: (req, res) => {
-
-        let type = req.query.type;
-        let startDate,endDate;
-        let query ={
-            regionName: { $ne: null },
-            customerCode: {$ne: null}
-        };
-
-        if (type === "monthly") {
-            startDate = moment().subtract(1, "month").startOf("month").toDate();
-            endDate = moment().subtract(1, "month").endOf("month").toDate();
-            Object.assign(query, {installationDate: {$gte: startDate, $lte: endDate}});
-        } else if (type === "Finance Year") {
-            startDate = dateHelper.fyYearStart();
-            endDate = moment().endOf("day").toDate();
-            Object.assign(query, {installationDate: { $gte: startDate, $lte: endDate }});
-        }
-
-        return services.smart_tyre_dashboard.top5region(query).then((data)=>{
-            return res.json(response.JsonMsg(true,data, "Dealer Installations Data for top 5 regions", 200));
-        }).catch((err)=>{
-            console.error(err);
-            return res.json(response.JsonMsg(false, null , "Failed to fetch data", 500));
-        })
-    },
-
-    top5ZoneTable: (req, res) => {
-
-        let type = req.query.type;
-        let startDate,endDate;
-        let query ={
-            zone: { $ne: null },
-            customerCode: {$ne: null}
-        };
-
-        if (type === "monthly") {
-            startDate = moment().subtract(1, "month").startOf("month").toDate();
-            endDate = moment().subtract(1, "month").endOf("month").toDate();
-            Object.assign(query, {installationDate: {$gte: startDate, $lte: endDate}});
-        } else if (type === "Finance Year") {
-            startDate = dateHelper.fyYearStart();
-            endDate = moment().endOf("day").toDate();
-            Object.assign(query, {installationDate: { $gte: startDate, $lte: endDate }});
-        }
-
-        return services.smart_tyre_dashboard.top5Zone(query).then((data)=>{
-            return res.json(response.JsonMsg(true,data, "Dealer Installations Data for top 5 zones", 200));
         }).catch((err)=>{
             console.error(err);
             return res.json(response.JsonMsg(false, null , "Failed to fetch data", 500));
@@ -191,13 +130,11 @@ module.exports = {
     },
 
     uploadDealerSellExcel: (req, res) => {
-
         const deleteFile = (filePath) => {
             if (filePath && fs.existsSync(filePath)) {
                 fs.unlinkSync(filePath);
             }
         };
-
         if (!req.file) {
             return res.json(
                 response.JsonMsg(false, null, "No file uploaded", 400)

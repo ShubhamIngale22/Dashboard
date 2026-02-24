@@ -8,18 +8,71 @@ const dateHelper = require("../helpers/date_helper");
 
 module.exports = {
     sellsInstallationsLineChart: (req, res) => {
-        const type=req.query.type || "7days";
+        const type       = req.query.type        || "7days";
+        const fiscalYear = req.query.fiscal_year || null;
+        const month      = req.query.month ? parseInt(req.query.month) : null;
 
-        return services.smart_tyre_dashboard.sellsInstallationsLineChart(type).then((data)=>{
-            const lineChartData = chartFormatter.combinedLineChart(
-                data.installations,
-                data.sells
-            );
-            return res.json(response.JsonMsg(true,lineChartData, "Line-Chart data is fetched.", 200));
-        }).catch((err)=>{
-            console.error(err);
-            return res.json(response.JsonMsg(false, null , "Failed to fetch data", 500));
-        })
+        let startDate, endDate, format, sortFormat;
+
+        if (type === "1year") {
+            startDate  = moment().subtract(1, "year").toDate();
+            endDate    = null;
+            format     = "%b-%Y";
+            sortFormat = "%Y-%m";
+
+        } else if (type === "30days") {
+            startDate  = moment().subtract(30, "days").toDate();
+            endDate    = null;
+            format     = "%d-%b";
+            sortFormat = "%Y-%m-%d";
+
+        } else if (type === "custom" && fiscalYear) {
+            const startYear = parseInt(fiscalYear.split("-")[0]);
+            const endYear   = startYear + 1;
+
+            if (month) {
+                const calendarMonth = month <= 9 ? month + 3 : month - 9;
+                const calendarYear  = month <= 9 ? startYear : endYear;
+                startDate  = moment({ year: calendarYear, month: calendarMonth - 1, date: 1 }).toDate();
+                endDate    = moment(startDate).endOf("month").toDate();
+                format     = "%d-%b";
+                sortFormat = "%Y-%m-%d";
+            } else {
+                startDate  = moment({ year: startYear, month: 3, date: 1 }).toDate();  // Apr 1
+                endDate    = moment({ year: endYear,   month: 2, date: 31 }).toDate(); // Mar 31
+                format     = "%b-%Y";
+                sortFormat = "%Y-%m";
+            }
+
+        } else {
+            startDate  = moment().subtract(7, "days").toDate();
+            endDate    = null;
+            format     = "%d-%b";
+            sortFormat = "%Y-%m-%d";
+        }
+
+        // Two separate match queries — different date field names per collection
+        const installationMatchQuery = endDate
+            ? { installationDate: { $gte: startDate, $lte: endDate } }
+            : { installationDate: { $gte: startDate } };
+
+        const sellsMatchQuery = endDate
+            ? { billingDate: { $gte: startDate, $lte: endDate } }
+            : { billingDate: { $gte: startDate } };
+
+        return services.smart_tyre_dashboard
+            .sellsInstallationsLineChart(installationMatchQuery, sellsMatchQuery, format, sortFormat)
+            .then((data) => {
+                const lineChartData = chartFormatter.combinedLineChart(
+                    data.installations,
+                    data.sells
+                );
+                return res.json(response.JsonMsg(true, lineChartData, "Line-Chart data is fetched.", 200));
+            })
+            .catch((err) => {
+                console.error(err);
+                return res.json(response.JsonMsg(false, null, "Failed to fetch data", 500));
+            });
     },
 
     zoneWiseInstallationsSellsPie: (req, res) => {

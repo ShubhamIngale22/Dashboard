@@ -1,42 +1,34 @@
 module.exports={
-    getLineChartDealerInstallations: (startDate, format, sortFormat) => {
+    getLineChartDealerInstallations: (matchQuery, format, sortFormat) => {
         return [
-            { $match: { installationDate: { $gte: startDate } } },
+            { $match: matchQuery },
             {
                 $group: {
-                    _id: {
-                        $dateToString: { format: sortFormat, date: "$installationDate" } // e.g. "2025-01"
-                    },
+                    _id: { $dateToString: { format: sortFormat, date: "$installationDate" } },
                     displayLabel: {
-                        $first: {
-                            $dateToString: { format: format, date: "$installationDate" } // e.g. "Jan 2025"
-                        }
+                        $first: { $dateToString: { format: format, date: "$installationDate" } }
                     },
                     count: { $sum: 1 }
                 }
             },
-            { $sort: { _id: 1 } }  // sorts correctly on "2025-01", "2025-02" etc.
-        ]
+            { $sort: { _id: 1 } }
+        ];
     },
 
-    getLineChartDealerSells: (startDate, format, sortFormat) => {
+    getLineChartDealerSells: (matchQuery, format, sortFormat) => {
         return [
-            { $match: { billingDate: { $gte: startDate } } },
+            { $match: matchQuery },
             {
                 $group: {
-                    _id: {
-                        $dateToString: { format: sortFormat, date: "$billingDate" }
-                    },
+                    _id: { $dateToString: { format: sortFormat, date: "$billingDate" } },
                     displayLabel: {
-                        $first: {
-                            $dateToString: { format: format, date: "$billingDate" }
-                        }
+                        $first: { $dateToString: { format: format, date: "$billingDate" } }
                     },
-                    count: {$sum:"$quantity"}
+                    count: { $sum: "$quantity" }   // sum of quantity, not count of docs
                 }
             },
             { $sort: { _id: 1 } }
-        ]
+        ];
     },
 
     getZoneWiseDealerInstallation:(startDate,endDate)=>{

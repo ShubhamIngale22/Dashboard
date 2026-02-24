@@ -4,40 +4,19 @@ const smart_tyre_dashboard = require("../query-provider/smart_tyre_dashboard");
 const dateHelper=require('../helpers/date_helper');
 
 module.exports= {
-    sellsInstallationsLineChart: (type) => {
-        let startDate;
-        let format;
-        let sortFormat;
+    sellsInstallationsLineChart: (installationMatchQuery, sellsMatchQuery, format, sortFormat) => {
 
-        if (type === "1year") {
-            startDate = moment().subtract(1, "year").toDate();
-            format = "%b-%Y";
-            sortFormat="%Y-%m";
-        } else if (type === "30days") {
-            startDate = moment().subtract(30, "days").toDate();
-            format = "%d-%b";
-            sortFormat="%Y-%m-%d";
-        } else {
-            startDate = moment().subtract(7, "day").toDate();
-            format = "%d-%b";
-            sortFormat="%Y-%m-%d";
-        }
-
-        const installationsPromise=model.dealerInstallation.aggregate(
-            smart_tyre_dashboard.getLineChartDealerInstallations(startDate, format,sortFormat)
+        const installationsPromise = model.dealerInstallation.aggregate(
+            smart_tyre_dashboard.getLineChartDealerInstallations(installationMatchQuery, format, sortFormat)
         );
 
-        const sellsPromise=model.dealerSell.aggregate(
-            smart_tyre_dashboard.getLineChartDealerSells(startDate, format,sortFormat)
+        const sellsPromise = model.dealerSell.aggregate(
+            smart_tyre_dashboard.getLineChartDealerSells(sellsMatchQuery, format, sortFormat)
         );
 
-        return Promise.all([installationsPromise,sellsPromise]).then(([installations,sells])=>{
-            return {
-                installations, sells
-            }
-        }).catch((err)=>{
-            return Promise.reject(err);
-        })
+        return Promise.all([installationsPromise, sellsPromise])
+            .then(([installations, sells]) => ({ installations, sells }))
+            .catch((err) => Promise.reject(err));
     },
 
     zoneWiseInstallationsSellsPie: (type = "monthly") => {

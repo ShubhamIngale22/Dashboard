@@ -146,23 +146,28 @@ module.exports = {
         let query = {customerCode: {$ne: null}};
         let groupId = {};
         let projection = {};
+        let limit;
 
         if(filter === "Dealers"){
             query = {customerCode: {$ne: null}};
             groupId = { customerCode: "$customerCode", dealerShopName: "$dealerShopName" };
             projection = { customerCode: "$_id.customerCode", dealerShopName: "$_id.dealerShopName" };
+            limit=6;
         }else if(filter === "Zones"){
             query ={zone: { $ne: null }, customerCode: {$ne: null}};
             groupId = "$zone";
-            projection =  { zone: "$_id" }
+            projection =  { zone: "$_id" };
+            limit=6;
         }else if(filter === "Regions"){
             query ={regionName: { $ne: null }, customerCode: {$ne: null}};
             groupId = "$regionName";
-            projection =  { regionName: "$_id" }
+            projection =  { regionName: "$_id" };
+            limit=5;
         }else if(filter === "MakeModels"){
             query ={manufacturerName: { $ne: null }, vehicleModelNo: { $ne: null }, customerCode: {$ne: null}};
             groupId = { make: "$manufacturerName", model: "$vehicleModelNo" };
-            projection ={ make: "$_id.make", model: "$_id.model" }
+            projection ={ make: "$_id.make", model: "$_id.model" };
+            limit=5;
         }
 
         if (type === "monthly") {
@@ -174,7 +179,7 @@ module.exports = {
             endDate = moment().endOf("day").toDate();
             Object.assign(query, {installationDate: { $gte: startDate, $lte: endDate }});
         }
-        return services.smart_tyre_dashboard.getTop5SmartTyreInstallation(query,groupId, projection).then((data)=>{
+        return services.smart_tyre_dashboard.getTop5SmartTyreInstallation(query,groupId, projection,limit).then((data)=>{
             return res.json(response.JsonMsg(true,data, "Dealer Installations Data for top 5 regions", 200));
         }).catch((err)=>{
             console.error(err);

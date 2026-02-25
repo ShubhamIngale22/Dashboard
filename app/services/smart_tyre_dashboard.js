@@ -68,8 +68,8 @@ module.exports= {
         );
     },
 
-    getTop5SmartTyreInstallation: (query,groupId, projection) => {
-        return model.dealerInstallation.aggregate(smart_tyre_dashboard.getTop5SmartTyreInstallation(query,groupId, projection)).then(result => {
+    getTop5SmartTyreInstallation: (query,groupId, projection,limit) => {
+        return model.dealerInstallation.aggregate(smart_tyre_dashboard.getTop5SmartTyreInstallation(query,groupId, projection,limit)).then(result => {
             return result;
         }).catch(err => {
             console.error(" top5DealerInstallations Service error is :", err);

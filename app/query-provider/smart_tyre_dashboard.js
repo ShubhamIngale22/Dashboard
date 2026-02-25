@@ -109,7 +109,7 @@ module.exports={
     },
 
     // ─── TOP 5 PIPELINES ──────────────────────────────────────────────────────────
-    getTop5SmartTyreInstallation: (query, groupId, projection) => {
+    getTop5SmartTyreInstallation: (query, groupId, projection,limit) => {
         return [
             {$match: query},
             {
@@ -119,7 +119,7 @@ module.exports={
                 }
             },
             {$sort: {count: -1}},
-            {$limit: 5},
+            {$limit: limit},
             {
                 $project: {
                     _id: 0,

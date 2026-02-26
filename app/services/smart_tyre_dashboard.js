@@ -19,41 +19,19 @@ module.exports= {
             .catch((err) => Promise.reject(err));
     },
 
-    zoneWiseInstallationsSellsPie: (type = "monthly") => {
-
-        let startDate, endDate;
-
-        if (type === "yearly") {
-            startDate=dateHelper.fyYearStart();
-            endDate = moment().endOf("day").toDate();
-        } else {
-            startDate = moment().subtract(1, "month").startOf("month").toDate();
-            endDate = moment().subtract(1, "month").endOf("month").toDate();
-        }
+    zoneWiseInstallationsSellsBarChart: (installationMatchQuery, sellsMatchQuery) => {
 
         const installationsPromise=model.dealerInstallation.aggregate(
-            smart_tyre_dashboard.getZoneWiseDealerInstallation(startDate,endDate)
+            smart_tyre_dashboard.getZoneWiseDealerInstallation(installationMatchQuery)
         );
 
         const sellsPromise=model.dealerSell.aggregate(
-            smart_tyre_dashboard.getZoneWiseDealerSells(startDate,endDate)
+            smart_tyre_dashboard.getZoneWiseDealerSells(sellsMatchQuery)
         );
 
-        const lastMonthLabel=moment().subtract(1,"month").format("MMM-YYYY");
-        const fyYearLabel=dateHelper.fyYearLabel();
-
-        return Promise.all([installationsPromise,sellsPromise]).then(([installations,sells])=>{
-            return {
-                labels:{
-                    lastMonthLabel:lastMonthLabel,
-                    fyYearLabel:fyYearLabel
-                },
-                installations,
-                sells
-            }
-        }).catch((err)=>{
-            return Promise.reject(err);
-        })
+        return Promise.all([installationsPromise, sellsPromise])
+            .then(([installations, sells]) => ({ installations, sells }))
+            .catch((err) => Promise.reject(err));
     },
 
     getInstallationCount: (query) => {

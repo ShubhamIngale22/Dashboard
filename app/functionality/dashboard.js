@@ -8,21 +8,21 @@ const dateHelper = require("../helpers/date_helper");
 
 module.exports = {
     sellsInstallationsLineChart: (req, res) => {
-        const type       = req.query.type        || "7days";
+        const type       = req.query.type;
         const fiscalYear = req.query.fiscal_year || null;
         const month      = req.query.month ? parseInt(req.query.month) : null;
 
         let startDate, endDate, format, sortFormat;
 
-        if (type === "1year") {
-            startDate  = moment().subtract(1, "year").toDate();
-            endDate    = null;
+        if (type === "YTD") {
+            startDate=dateHelper.fyYearStart();
+            endDate = null;
             format     = "%b-%Y";
             sortFormat = "%Y-%m";
 
-        } else if (type === "30days") {
-            startDate  = moment().subtract(30, "days").toDate();
-            endDate    = null;
+        } else if (type === "MTD") {
+            startDate = moment().startOf("month").toDate();
+            endDate = moment().endOf("month").toDate();
             format     = "%d-%b";
             sortFormat = "%Y-%m-%d";
 
@@ -43,12 +43,6 @@ module.exports = {
                 format     = "%b-%Y";
                 sortFormat = "%Y-%m";
             }
-
-        } else {
-            startDate  = moment().subtract(7, "days").toDate();
-            endDate    = null;
-            format     = "%d-%b";
-            sortFormat = "%Y-%m-%d";
         }
 
         // Two separate match queries — different date field names per collection
@@ -75,12 +69,57 @@ module.exports = {
             });
     },
 
-    zoneWiseInstallationsSellsPie: (req, res) => {
-        const type=req.query.type;
+    zoneWiseInstallationsSellsBarChart: (req, res) => {
+        const type       = req.query.type;
+        const fiscalYear = req.query.fiscal_year || null;
+        const month      = req.query.month ? parseInt(req.query.month) : null;
 
-        return services.smart_tyre_dashboard.zoneWiseInstallationsSellsPie(type).then((data)=>{
+        let startDate, endDate;
 
-            return res.json(response.JsonMsg(true, data, "Zone-wise data is fetched.", 200));
+        if (type === "MTD") {
+            startDate = moment().startOf("month").toDate();
+            endDate = moment().endOf("month").toDate();
+        } else if (type === "custom" && fiscalYear) {
+            const startYear = parseInt(fiscalYear.split("-")[0]);
+            const endYear   = startYear + 1;
+            if (month) {
+                const calendarMonth = month <= 9 ? month + 3 : month - 9;
+                const calendarYear  = month <= 9 ? startYear : endYear;
+                startDate  = moment({ year: calendarYear, month: calendarMonth - 1, date: 1 }).toDate();
+                endDate    = moment(startDate).endOf("month").toDate();
+            } else {
+                startDate  = moment({ year: startYear, month: 3, date: 1 }).toDate();  // Apr 1
+                endDate    = moment({ year: endYear,   month: 2, date: 31 }).toDate(); // Mar 31
+            }
+        }else{
+            startDate=dateHelper.fyYearStart();
+            endDate = null;
+        }
+        // Two separate match queries — different date field names per collection
+        const installationMatchQuery = endDate
+            ? { installationDate: { $gte: startDate, $lte: endDate } }
+            : { installationDate: { $gte: startDate } };
+        Object.assign(installationMatchQuery,{zone:{$ne:null}});
+
+        const sellsMatchQuery = endDate
+            ? { billingDate: { $gte: startDate, $lte: endDate } }
+            : { billingDate: { $gte: startDate } };
+        Object.assign(sellsMatchQuery,{zone:{$ne:null}});
+
+        const lastMonthLabel=moment().format("MMM-YYYY");
+        const fyYearLabel=dateHelper.fyYearLabel();
+
+        return services.smart_tyre_dashboard.zoneWiseInstallationsSellsBarChart(installationMatchQuery, sellsMatchQuery).then((data) => {
+            const { installations, sells } = data;
+            const barChartData ={
+                labels:{
+                    lastMonthLabel:lastMonthLabel,
+                    fyYearLabel:fyYearLabel
+                },
+                installations,
+                sells
+            }
+            return res.json(response.JsonMsg(true, barChartData, "Bar-Chart data is fetched", 200));
         }).catch((err)=>{
             console.error(err);
             return res.json(response.JsonMsg(false, null , "Failed to fetch data", 500));
@@ -92,12 +131,12 @@ module.exports = {
 
         const yesterdayStart = now.clone().subtract(1, "day").startOf("day").toDate();
         const yesterdayEnd   = now.clone().subtract(1, "day").endOf("day").toDate();
-        const lastMonthStart = now.clone().subtract(1, "month").startOf("month").toDate();
-        const lastMonthEnd   = now.clone().subtract(1, "month").endOf("month").toDate();
+        const lastMonthStart = now.clone().startOf("month").toDate();
+        const lastMonthEnd   = now.clone().endOf("month").toDate();
         const fyYearStart    = dateHelper.fyYearStart();
         const todayEnd       = now.clone().endOf("day").toDate();
 
-        const lastMonthLabel = now.clone().subtract(1, "month").format("MMM-YYYY");
+        const lastMonthLabel = now.clone().format("MMM-YYYY");
         const fyYearLabel    = dateHelper.fyYearLabel();
 
         const yesterdayQuery    = { installationDate: { $gte: yesterdayStart, $lte: yesterdayEnd } };

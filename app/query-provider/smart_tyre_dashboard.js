@@ -31,13 +31,10 @@ module.exports={
         ];
     },
 
-    getZoneWiseDealerInstallation:(startDate,endDate)=>{
+    getZoneWiseDealerInstallation:(installationMatchQuery)=>{
         return [
             {
-                $match:{
-                    installationDate:{$gte:startDate , $lte:endDate},
-                    zone:{$ne:null}
-                }
+                $match:installationMatchQuery
             },
             {
                 $group:{
@@ -60,13 +57,10 @@ module.exports={
         ]
     },
 
-    getZoneWiseDealerSells:(startDate,endDate)=>{
+    getZoneWiseDealerSells:(sellsMatchQuery)=>{
         return [
             {
-                $match:{
-                    billingDate:{$gte:startDate , $lte:endDate},
-                    zone:{$ne:null}
-                }
+                $match:sellsMatchQuery
             },
             {
                 $group:{

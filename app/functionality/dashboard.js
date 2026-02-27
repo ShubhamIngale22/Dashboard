@@ -191,7 +191,7 @@ module.exports = {
             query = {customerCode: {$ne: null}};
             groupId = { customerCode: "$customerCode", dealerShopName: "$dealerShopName" };
             projection = { customerCode: "$_id.customerCode", dealerShopName: "$_id.dealerShopName" };
-            limit=6;
+            limit=5;
         }else if(filter === "Zones"){
             query ={zone: { $ne: null }, customerCode: {$ne: null}};
             groupId = "$zone";
@@ -201,7 +201,7 @@ module.exports = {
             query ={regionName: { $ne: null }, customerCode: {$ne: null}};
             groupId = "$regionName";
             projection =  { regionName: "$_id" };
-            limit=5;
+            limit=6;
         }else if(filter === "MakeModels"){
             query ={manufacturerName: { $ne: null }, vehicleModelNo: { $ne: null }, customerCode: {$ne: null}};
             groupId = { make: "$manufacturerName", model: "$vehicleModelNo" };

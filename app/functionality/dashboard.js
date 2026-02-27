@@ -131,44 +131,54 @@ module.exports = {
 
         const yesterdayStart = now.clone().subtract(1, "day").startOf("day").toDate();
         const yesterdayEnd   = now.clone().subtract(1, "day").endOf("day").toDate();
-        const lastMonthStart = now.clone().startOf("month").toDate();
-        const lastMonthEnd   = now.clone().endOf("month").toDate();
-        const fyYearStart    = dateHelper.fyYearStart();
+        const lastMonthStart = now.clone().subtract(1, "month").startOf("month").toDate();
+        const lastMonthEnd   = now.clone().subtract(1, "month").endOf("month").toDate();
+        const mtdStart = now.clone().startOf("month").toDate();
+        const mtdEnd   = now.clone().endOf("month").toDate();
+        const ytdStart    = dateHelper.fyYearStart();
         const todayEnd       = now.clone().endOf("day").toDate();
 
-        const lastMonthLabel = now.clone().format("MMM-YYYY");
-        const fyYearLabel    = dateHelper.fyYearLabel();
+        const lastMonthLabel = now.clone().subtract(1, "month").format("MMM-YYYY");
+        const mtdLabel = now.clone().format("MMM-YYYY");
+        const ytdLabel    = dateHelper.fyYearLabel();
 
         const yesterdayQuery    = { installationDate: { $gte: yesterdayStart, $lte: yesterdayEnd } };
         const lastMonthQuery    = { installationDate: { $gte: lastMonthStart, $lte: lastMonthEnd } };
-        const fyYearQuery       = { installationDate: { $gte: fyYearStart,    $lte: todayEnd     } };
+        const mtdQuery    = { installationDate: { $gte: mtdStart, $lte: mtdEnd } };
+        const ytdQuery       = { installationDate: { $gte: ytdStart,    $lte: todayEnd     } };
 
         const yesterdaySellQuery = { billingDate: { $gte: yesterdayStart, $lte: yesterdayEnd } };
-        const lastMonthSellQuery = { billingDate: { $gte: lastMonthStart, $lte: lastMonthEnd } };
-        const fyYearSellQuery    = { billingDate: { $gte: fyYearStart,    $lte: todayEnd     } };
+        const lastMonthSellQuery    = { billingDate: { $gte: lastMonthStart, $lte: lastMonthEnd } };
+        const mtdSellQuery = { billingDate: { $gte: mtdStart, $lte: mtdEnd } };
+        const ytdSellQuery    = { billingDate: { $gte: ytdStart,    $lte: todayEnd     } };
 
         return Promise.all([
             services.smart_tyre_dashboard.getInstallationCount(yesterdayQuery),
             services.smart_tyre_dashboard.getInstallationCount(lastMonthQuery),
-            services.smart_tyre_dashboard.getInstallationCount(fyYearQuery),
+            services.smart_tyre_dashboard.getInstallationCount(mtdQuery),
+            services.smart_tyre_dashboard.getInstallationCount(ytdQuery),
             services.smart_tyre_dashboard.getSellsCount(yesterdaySellQuery),
             services.smart_tyre_dashboard.getSellsCount(lastMonthSellQuery),
-            services.smart_tyre_dashboard.getSellsCount(fyYearSellQuery),
-        ]).then(([iYesterday, iLastMonth, iFyYear, sYesterday, sLastMonth, sFyYear]) => {
+            services.smart_tyre_dashboard.getSellsCount(mtdSellQuery),
+            services.smart_tyre_dashboard.getSellsCount(ytdSellQuery),
+        ]).then(([iYesterday,ilastMonth, iMTD, iYTD, sYesterday,slastMonth, sMTD, sYTD]) => {
             const data = {
                 labels: {
                     lastMonthLabel,
-                    fyYearLabel
+                    mtdLabel,
+                    ytdLabel
                 },
                 installations: {
                     yesterday: iYesterday[0]?.count ?? 0,
-                    lastMonth: iLastMonth[0]?.count ?? 0,
-                    fyYear:    iFyYear[0]?.count    ?? 0
+                    lastMonth:ilastMonth[0]?.count?? 0,
+                    mtd: iMTD[0]?.count ?? 0,
+                    ytd:    iYTD[0]?.count    ?? 0
                 },
                 sells: {
                     yesterday: sYesterday[0]?.count ?? 0,
-                    lastMonth: sLastMonth[0]?.count ?? 0,
-                    fyYear:    sFyYear[0]?.count    ?? 0
+                    lastMonth:slastMonth[0]?.count?? 0,
+                    mtd: sMTD[0]?.count ?? 0,
+                    ytd:    sYTD[0]?.count    ?? 0
                 }
             };
             return res.json(response.JsonMsg(true, data, "Dealer Installations and sells data is fetched.", 200));

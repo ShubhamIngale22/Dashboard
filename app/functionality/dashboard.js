@@ -191,6 +191,8 @@ module.exports = {
     getTop5SmartTyreInstallation: (req, res) => {
         let filter = req.query.filter;
         let type = req.query.type;
+        const fiscalYear = req.query.fiscal_year || null;
+        const month      = req.query.month ? parseInt(req.query.month) : null;
         let startDate,endDate;
         let query = {customerCode: {$ne: null}};
         let groupId = {};
@@ -219,14 +221,29 @@ module.exports = {
             limit=5;
         }
 
-        if (type === "monthly") {
+        // here else is all time
+        if (type === "MTD") {
             startDate = moment().subtract(1, "month").startOf("month").toDate();
             endDate = moment().subtract(1, "month").endOf("month").toDate();
             Object.assign(query, {installationDate: {$gte: startDate, $lte: endDate}});
-        } else if (type === "Finance Year") {
+        } else if (type === "YTD") {
             startDate = dateHelper.fyYearStart();
             endDate = moment().endOf("day").toDate();
             Object.assign(query, {installationDate: { $gte: startDate, $lte: endDate }});
+        } else if (type === "custom" && fiscalYear) {
+            const startYear = parseInt(fiscalYear.split("-")[0]);
+            const endYear   = startYear + 1;
+            if (month) {
+                const calendarMonth = month <= 9 ? month + 3 : month - 9;
+                const calendarYear  = month <= 9 ? startYear : endYear;
+                startDate  = moment({ year: calendarYear, month: calendarMonth - 1, date: 1 }).toDate();
+                endDate    = moment(startDate).endOf("month").toDate();
+                Object.assign(query, {installationDate: {$gte: startDate, $lte: endDate}});
+            } else {
+                startDate  = moment({ year: startYear, month: 3, date: 1 }).toDate();  // Apr 1
+                endDate    = moment({ year: endYear,   month: 2, date: 31 }).toDate(); // Mar 31
+                Object.assign(query, {installationDate: {$gte: startDate, $lte: endDate}});
+            }
         }
         return services.smart_tyre_dashboard.getTop5SmartTyreInstallation(query,groupId, projection,limit).then((data)=>{
             return res.json(response.JsonMsg(true,data, "Dealer Installations Data for top 5 regions", 200));

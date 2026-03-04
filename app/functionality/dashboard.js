@@ -223,8 +223,8 @@ module.exports = {
 
         // here else is all time
         if (type === "MTD") {
-            startDate = moment().subtract(1, "month").startOf("month").toDate();
-            endDate = moment().subtract(1, "month").endOf("month").toDate();
+            startDate = moment().startOf("month").toDate();
+            endDate = moment().endOf("month").toDate();
             Object.assign(query, {installationDate: {$gte: startDate, $lte: endDate}});
         } else if (type === "YTD") {
             startDate = dateHelper.fyYearStart();

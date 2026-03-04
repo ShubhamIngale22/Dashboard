@@ -122,5 +122,27 @@ module.exports={
                 }
             }
         ];
-    }
+    },
+
+    generateInstallationSummary: (query, startDate) => {
+        return [
+            {
+                $match: query
+            },
+            {
+                $group: {
+                    _id: "$zone",
+                    installationCount: {$sum: 1}
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    zone: "$_id",
+                    installationCount: 1,
+                    installationDate: startDate,
+                }
+            }
+        ]
+    },
 }

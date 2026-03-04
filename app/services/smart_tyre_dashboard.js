@@ -82,6 +82,50 @@ module.exports= {
             regionName: row.regionName
         }));
         return model.dealerSell.insertMany(formattedData, {ordered: false});
-    }
+    },
 
+    generateInstallationSummary: (day) => {
+        try {
+            const today = moment();
+
+            const startDate = today.clone().subtract(day, 'day').startOf('day').toDate();
+            console.log("StartDate is :",startDate);
+            const endDate = today.clone().subtract(day, 'day').endOf('day').toDate();
+            console.log("endDate is :",endDate);
+            let query = {
+                installationDate: {$gte: startDate, $lte: endDate},
+                installType: {$ne: "Online"},
+                customerCode: {$ne: null},
+                zone: {$ne: null},
+            };
+
+            //Dealer installation daily counts
+            model.dealerInstallation.aggregate(smart_tyre_dashboard.generateInstallationSummary(query, startDate)).then(async (installData) => {
+                const zoneMap = {};
+                let installCount = 0
+                installData.forEach(item => {
+                    zoneMap[item.zone] = item.installationCount;
+                    installCount += item.installationCount;
+                });
+
+                const allZones = ["NZ", "SZ", "EZ", "WZ", "CZ", "TZ"];
+                const finalData = allZones.map(zone => ({
+                    zone,
+                    installationDate: startDate,
+                    installationCount: zoneMap[zone] ?? 0,
+                }));
+
+                const dailyInstallation = new model.dealerInstallationCount({
+                    installationDate: startDate,
+                    installationCount: installCount,
+                });
+                await dailyInstallation.save();
+                await model.dealerInstallationZoneCount.insertMany(finalData);
+            }).catch((err) => {
+                console.log("ERR:", err.message);
+            });
+        } catch (e) {
+            console.error('ERR::', e.message);
+        }
+    },
 }

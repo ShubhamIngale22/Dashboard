@@ -6,6 +6,7 @@ const http = require("http");
 
 const { connectDB } = require("./db/config");
 const { PORT } = require("./app/constant/constant");
+const cron_job =require ("./app/cron-job/cron");
 
 //create dir
 const dir = "./logger_logs";
@@ -25,6 +26,7 @@ app.use(express.static(__dirname + "/public"));
 
 const api = require("./app/routes/api")(app, express);
 app.use("/api", api);
+// cron_job.generateInstallationSummary();
 
 const httpServer = http.createServer(app);
 

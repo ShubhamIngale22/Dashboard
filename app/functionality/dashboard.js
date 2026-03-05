@@ -195,8 +195,7 @@ module.exports = {
         const month      = req.query.month ? parseInt(req.query.month) : null;
         let startDate,endDate;
         let query = {customerCode: {$ne: null}};
-        let groupId = {};
-        let projection = {};
+        let groupId = {}, projection = {}, count = {};
         let limit;
 
         if(filter === "Dealers"){
@@ -204,21 +203,25 @@ module.exports = {
             groupId = { customerCode: "$customerCode", dealerShopName: "$dealerShopName" };
             projection = { customerCode: "$_id.customerCode", dealerShopName: "$_id.dealerShopName" };
             limit=5;
+            count={$sum: 1};
         }else if(filter === "Zones"){
-            query ={zone: { $ne: null }, customerCode: {$ne: null}};
+            query ={zone: { $ne: null }};
             groupId = "$zone";
             projection =  { zone: "$_id" };
             limit=6;
+            count= {$sum: "$installationCount"}
         }else if(filter === "Regions"){
             query ={regionName: { $ne: null }, customerCode: {$ne: null}};
             groupId = "$regionName";
             projection =  { regionName: "$_id" };
             limit=6;
+            count={$sum: 1};
         }else if(filter === "MakeModels"){
             query ={manufacturerName: { $ne: null }, vehicleModelNo: { $ne: null }, customerCode: {$ne: null}};
             groupId = { make: "$manufacturerName", model: "$vehicleModelNo" };
             projection ={ make: "$_id.make", model: "$_id.model" };
             limit=5;
+            count={$sum: 1};
         }
 
         // here else is all time
@@ -245,7 +248,7 @@ module.exports = {
                 Object.assign(query, {installationDate: {$gte: startDate, $lte: endDate}});
             }
         }
-        return services.smart_tyre_dashboard.getTop5SmartTyreInstallation(query,groupId, projection,limit).then((data)=>{
+        return services.smart_tyre_dashboard.getTop5SmartTyreInstallation(query,groupId, projection,limit,count,filter).then((data)=>{
             return res.json(response.JsonMsg(true,data, "Dealer Installations Data for top 5 regions", 200));
         }).catch((err)=>{
             console.error(err);

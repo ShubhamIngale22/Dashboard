@@ -6,7 +6,7 @@ const dateHelper=require('../helpers/date_helper');
 module.exports= {
     sellsInstallationsLineChart: (installationMatchQuery, sellsMatchQuery, format, sortFormat) => {
 
-        const installationsPromise = model.dealerInstallation.aggregate(
+        const installationsPromise = model.dealerInstallationCount.aggregate(
             smart_tyre_dashboard.getLineChartDealerInstallations(installationMatchQuery, format, sortFormat)
         );
 
@@ -21,7 +21,7 @@ module.exports= {
 
     zoneWiseInstallationsSellsBarChart: (installationMatchQuery, sellsMatchQuery) => {
 
-        const installationsPromise=model.dealerInstallation.aggregate(
+        const installationsPromise=model.dealerInstallationZoneCount.aggregate(
             smart_tyre_dashboard.getZoneWiseDealerInstallation(installationMatchQuery)
         );
 
@@ -35,7 +35,7 @@ module.exports= {
     },
 
     getInstallationCount: (query) => {
-        return model.dealerInstallation.aggregate(
+        return model.dealerInstallationCount.aggregate(
             smart_tyre_dashboard.getInstallationCount(query)
         );
     },
@@ -46,8 +46,11 @@ module.exports= {
         );
     },
 
-    getTop5SmartTyreInstallation: (query,groupId, projection,limit) => {
-        return model.dealerInstallation.aggregate(smart_tyre_dashboard.getTop5SmartTyreInstallation(query,groupId, projection,limit)).then(result => {
+    getTop5SmartTyreInstallation: (query,groupId, projection,limit,count,filter) => {
+
+        const collection= filter === "Zones"
+        ? model.dealerInstallationZoneCount : model.dealerInstallation;
+        return collection.aggregate(smart_tyre_dashboard.getTop5SmartTyreInstallation(query,groupId, projection,limit,count)).then(result => {
             return result;
         }).catch(err => {
             console.error(" top5DealerInstallations Service error is :", err);

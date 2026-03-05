@@ -8,7 +8,7 @@ module.exports={
                     displayLabel: {
                         $first: { $dateToString: { format: format, date: "$installationDate" } }
                     },
-                    count: { $sum: 1 }
+                    count: { $sum: "$installationCount" }
                 }
             },
             { $sort: { _id: 1 } }
@@ -39,7 +39,7 @@ module.exports={
             {
                 $group:{
                     _id:"$zone",
-                    count:{$sum:1}
+                    count:{$sum: "$installationCount"}
                 }
             },
             {
@@ -86,7 +86,12 @@ module.exports={
     getInstallationCount: (query) => {
         return [
             { $match: query },
-            { $count: "count" }
+            {
+                $group: {
+                    _id: null,
+                    count: { $sum: "$installationCount" }
+                }
+            }
         ]
     },
 
@@ -103,13 +108,13 @@ module.exports={
     },
 
     // ─── TOP 5 PIPELINES ──────────────────────────────────────────────────────────
-    getTop5SmartTyreInstallation: (query, groupId, projection,limit) => {
+    getTop5SmartTyreInstallation: (query, groupId, projection,limit,count) => {
         return [
             {$match: query},
             {
                 $group: {
                     _id: groupId,
-                    count: {$sum: 1}
+                    count: count
                 }
             },
             {$sort: {count: -1}},

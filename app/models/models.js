@@ -3,5 +3,6 @@ module.exports = {
     dealerSell: require("../schema/dealerSell"),
     dealerInstallationCount: require('../schema/dealerInstallationCount'),
     dealerInstallationZoneCount: require('../schema/dealerInstallationZoneCount'),
-    user: require("../schema/user")
+    user: require("../schema/user"),
+    role:require("../schema/role")
 };

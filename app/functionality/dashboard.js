@@ -8,52 +8,81 @@ const dateHelper = require("../helpers/date_helper");
 const error=require("../constant/messages");
 const bcrypt=require("bcrypt");
 const jwtHelper=require("../helpers/jwt_helper");
+const {ROLE_PERMISSIONS} = require('../constant/constant');
 
 module.exports = {
 
     addUser: (req, res) => {
-
-        if (!req.body || !req.body.name || !req.body.email || !req.body.phone || !req.body.password || !req.body.address || !req.body.role) {
-            return res.json(response.JsonMsg(false, null, error.EMPTY_STRING, 404));
+        if (!req.body || !req.body.name || !req.body.email || !req.body.phone ||
+            !req.body.password || !req.body.address || !req.body.roleId) {
+            return res.json(response.JsonMsg(false, null, error.EMPTY_STRING, 400));
         }
-        const {name, email, phone, password,address,role} = req.body;
 
-        return services.smart_tyre_dashboard.getUser({$or:[{email: email}, {phone:phone}]}).then((userData) => {
-            if (userData) {
-                let msg = userData.email === email
-                    ? error.EMAIL_EXISTS
-                    : error.PHONE_EXISTS;
+        const { name, email, phone, password, address, roleId } = req.body;
+        const loggedInUser = req.user; // from JWT middleware
 
-                return Promise.reject({ key: 'msg', msg });
-            }
-        }).then(() => {
-            let data = {
-                name: name,
-                email: email,
-                phone: phone,
-                password: password,
-                address:address,
-                role:role
-            }
-
-            return services.smart_tyre_dashboard.addUser(data).then((result) => {
-                if (result) {
-                    let userObj=result.toObject();
-                    delete userObj.password;
-                    return res.json(response.JsonMsg(true, result, 'User added successfully!', 200));
-                } else {
-                    return Promise.reject({key: 'msg', msg: 'Unable to add user!'});
+        // 1. Fetch logged-in user's role
+        return services.smart_tyre_dashboard.getRole({ roleId: loggedInUser.roleId, isEnable: true })
+            .then((loggedInRole) => {
+                if (!loggedInRole) {
+                    return Promise.reject({ key: 'msg', msg: 'Your role is invalid or disabled!', status: 403 });
                 }
-            }).catch((err) => {
-                return Promise.reject(err);
+
+                // 2. Fetch target role
+                return services.smart_tyre_dashboard.getRole({ roleId: Number(roleId), isEnable: true })
+                    .then((targetRole) => {
+                        if (!targetRole) {
+                            return Promise.reject({ key: 'msg', msg: 'Invalid or disabled role!', status: 400 });
+                        }
+
+                        // 3.ROLE_PERMISSIONS check
+                        const allowedLevels = ROLE_PERMISSIONS[loggedInRole.roleLevel] || [];
+                        if (!allowedLevels.includes(targetRole.roleLevel)) {
+                            return Promise.reject({ key: 'msg', msg: 'You are not authorized to add this role!', status: 403 });
+                        }
+
+                        // 4. Check duplicate email or phone
+                        return services.smart_tyre_dashboard.getUser({ $or: [{ email }, { phone }] })
+                            .then((existingUser) => {
+                                if (existingUser) {
+                                    const msg = existingUser.email === email
+                                        ? error.EMAIL_EXISTS
+                                        : error.PHONE_EXISTS;
+                                    return Promise.reject({ key: 'msg', msg, status: 409 });
+                                }
+
+                                // 5. Build data
+                                const data = {
+                                    name,
+                                    email,
+                                    phone,
+                                    password,
+                                    address,
+                                    roleId:    targetRole.roleId,
+                                    roleLevel: targetRole.roleLevel,
+                                    roleName:  targetRole.roleName,
+                                };
+
+                                return services.smart_tyre_dashboard.addUser(data);
+                            });
+                    });
+            })
+            .then((result) => {
+                if (!result) {
+                    return Promise.reject({ key: 'msg', msg: 'Unable to add user!', status: 500 });
+                }
+
+                const userObj = result.toObject();
+                delete userObj.password;
+
+                return res.json(response.JsonMsg(true, userObj, 'User added successfully!', 201));
+            })
+            .catch((err) => {
+                if (err && err.key === 'msg') {
+                    return res.json(response.JsonMsg(false, null, err.msg, err.status || 400));
+                }
+                return res.json(response.JsonMsg(false, null, err.message, 500));
             });
-        }).catch((err) => {
-            if (err && err.key === 'msg') {
-                return res.json(response.JsonMsg(false, null, err.msg, 404));
-            } else {
-                return res.json(response.JsonMsg(false, null, err.message, 404));
-            }
-        });
     },
 
     loginUser: (req, res) => {
@@ -67,33 +96,38 @@ module.exports = {
         return services.smart_tyre_dashboard.getUser(query, true)
             .then((userData) => {
                 if (!userData) {
-                    return Promise.reject({ key: 'msg', msg: 'User not found!' });
+                    return Promise.reject({ key: 'msg', msg: 'User not found!', status: 404 });
                 }
+
                 return bcrypt.compare(password, userData.password)
                     .then((isMatch) => {
                         if (!isMatch) {
-                            return Promise.reject({ key: 'msg', msg: 'Invalid password!' });
+                            return Promise.reject({ key: 'msg', msg: 'Invalid password!', status: 401 });
                         }
 
                         return services.smart_tyre_dashboard.updateUser(
                             { _id: userData._id },
                             { activeStatus: true }
-                        ).then((updatedUser) => {
+                        )
+                            .then((updatedUser) => {
                                 const token = jwtHelper.generateToken({
-                                    userId: updatedUser._id,
-                                    email: updatedUser.email,
-                                    role: updatedUser.role
+                                    userId:    updatedUser._id,
+                                    email:     updatedUser.email,
+                                    roleId:    updatedUser.roleId,
+                                    roleLevel: updatedUser.roleLevel,
+                                    roleName:  updatedUser.roleName
                                 });
 
                                 const userObj = updatedUser.toObject();
                                 delete userObj.password;
+
                                 return res.json(response.JsonMsg(true, { user: userObj, token: token }, 'Login successful', 200));
-                        });
+                            });
                     });
             })
             .catch((err) => {
                 if (err && err.key === 'msg') {
-                    return res.json(response.JsonMsg(false, null, err.msg, 401));
+                    return res.json(response.JsonMsg(false, null, err.msg, err.status || 401));
                 }
                 return res.json(response.JsonMsg(false, null, err.message, 500));
             });

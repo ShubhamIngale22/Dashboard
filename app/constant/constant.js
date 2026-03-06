@@ -8,12 +8,18 @@ const JWT_EXPIRE = process.env.JWT_EXPIRE || "1d";
 const FILE_UPLOAD = {
     uploadPath:"uploads/"
 };
-
+const ROLE_PERMISSIONS = {
+    1: [2],   // roleLevel 1 (Super System Admin) can add roleLevel 2 (System Admin)
+    2: [3],   // roleLevel 2 (System Admin) can add roleLevel 3 (Admin)
+    3: [4],   // roleLevel 3 (Admin) can add roleLevel 4 (ZM)
+    4: []     // ZM cannot add anyone
+};
 module.exports = {
     'dbURL': dbURL,
     'PORT': PORT,
     'FILE_UPLOAD':FILE_UPLOAD,
     'JWT_SECRET':JWT_SECRET,
-    'JWT_EXPIRE':JWT_EXPIRE
+    'JWT_EXPIRE':JWT_EXPIRE,
+    'ROLE_PERMISSIONS':ROLE_PERMISSIONS
 };
 

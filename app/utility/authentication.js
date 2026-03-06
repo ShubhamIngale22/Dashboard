@@ -4,7 +4,7 @@ const response = require('./api_handler');
 module.exports = (req, res, next) => {
 
     const authHeader = req.headers.authorization;
-    if (!authHeader) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {  // ✅ check Bearer format
         return res.json(response.JsonMsg(false, null, 'Authorization token missing!', 401));
     }
 
@@ -18,8 +18,10 @@ module.exports = (req, res, next) => {
         req.user = decoded;
         next();
 
-
     } catch (err) {
-        return res.json(response.JsonMsg(false, null, 'Invalid or expired token!', 401));
+        if (err.name === 'TokenExpiredError') {
+            return res.json(response.JsonMsg(false, null, 'Token expired!', 401));
+        }
+        return res.json(response.JsonMsg(false, null, 'Invalid token!', 401));
     }
 };

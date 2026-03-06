@@ -3,7 +3,7 @@ const { JWT_SECRET, JWT_EXPIRE } = require('../constant/constant');
 
 module.exports = {
 
-    generateToken: (payload, expiry = JWT_EXPIRE || '1d') => {
+    generateToken: (payload, expiry = JWT_EXPIRE) => {
         return jwt.sign(
             payload,
             JWT_SECRET,

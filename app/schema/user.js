@@ -26,24 +26,24 @@ const userSchema = new mongoose.Schema(
             type: String,
             required: true
         },
-        role: {
-            type: String,
-            default: "RM",
+        roleId: {
+            type: Number,
+            required: true,
         },
-        isAdmin: {
-            type: Boolean,
-            default: false
+        roleLevel: {
+            type: Number,
+            required: true,
+        },
+        roleName: {
+            type: String,
+            required: true,
         },
         customerId: {
             type: String,
             required: true,
-            default:"69a9601eb9b332cccf6fe0ec"
+            default: "69a9601eb9b332cccf6fe0ec"
         },
         activeStatus: {
-            type: Boolean,
-            default: false
-        },
-        logout: {
             type: Boolean,
             default: false
         },
@@ -54,6 +54,8 @@ const userSchema = new mongoose.Schema(
     },
     { timestamps: true }
 );
+
+// pre-save hook — handles hashing automatically
 
 userSchema.pre("save", async function () {
     if (!this.isModified("password")) return;

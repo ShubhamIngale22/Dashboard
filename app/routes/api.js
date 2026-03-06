@@ -1,5 +1,6 @@
 const upload = require("../utility/upload_middleware");
 const dashboard=require("../functionality/dashboard");
+const authentication=require('../utility/authentication');
 
 module.exports = (app, express) => {
     let api = express.Router();
@@ -23,6 +24,17 @@ module.exports = (app, express) => {
     api.post('/uploadDealerSellExcel', upload.single('file'), (req, res) => {
         dashboard.uploadDealerSellExcel(req, res).then(()=>{});
     });
+
+    api.post('/loginUser', (req, res) => {
+        dashboard.loginUser(req, res);
+    });
+
+    api.use(authentication);
+
+    api.post('/addUser', (req, res) => {
+        dashboard.addUser(req, res);
+    });
+
     return api;
 }
 

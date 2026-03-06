@@ -58,6 +58,10 @@ module.exports= {
         });
     },
 
+    getRole: (query) => {
+        return model.role.findOne(query);
+    },
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     sellsInstallationsLineChart: (installationMatchQuery, sellsMatchQuery, format, sortFormat) => {

@@ -5,8 +5,100 @@ const fs = require('fs');
 const XLSX = require('xlsx');
 const moment = require("moment/moment");
 const dateHelper = require("../helpers/date_helper");
+const error=require("../constant/messages");
+const bcrypt=require("bcrypt");
+const jwtHelper=require("../helpers/jwt_helper");
 
 module.exports = {
+
+    addUser: (req, res) => {
+
+        if (!req.body || !req.body.name || !req.body.email || !req.body.phone || !req.body.password || !req.body.address || !req.body.role) {
+            return res.json(response.JsonMsg(false, null, error.EMPTY_STRING, 404));
+        }
+        const {name, email, phone, password,address,role} = req.body;
+
+        return services.smart_tyre_dashboard.getUser({$or:[{email: email}, {phone:phone}]}).then((userData) => {
+            if (userData) {
+                let msg = userData.email === email
+                    ? error.EMAIL_EXISTS
+                    : error.PHONE_EXISTS;
+
+                return Promise.reject({ key: 'msg', msg });
+            }
+        }).then(() => {
+            let data = {
+                name: name,
+                email: email,
+                phone: phone,
+                password: password,
+                address:address,
+                role:role
+            }
+
+            return services.smart_tyre_dashboard.addUser(data).then((result) => {
+                if (result) {
+                    let userObj=result.toObject();
+                    delete userObj.password;
+                    return res.json(response.JsonMsg(true, result, 'User added successfully!', 200));
+                } else {
+                    return Promise.reject({key: 'msg', msg: 'Unable to add user!'});
+                }
+            }).catch((err) => {
+                return Promise.reject(err);
+            });
+        }).catch((err) => {
+            if (err && err.key === 'msg') {
+                return res.json(response.JsonMsg(false, null, err.msg, 404));
+            } else {
+                return res.json(response.JsonMsg(false, null, err.message, 404));
+            }
+        });
+    },
+
+    loginUser: (req, res) => {
+        if (!req.body || !req.body.emailOrPhone || !req.body.password) {
+            return res.json(response.JsonMsg(false, null, error.EMPTY_STRING, 400));
+        }
+
+        const { password, emailOrPhone } = req.body;
+        const query = { $or: [{ email: emailOrPhone }, { phone: emailOrPhone }] };
+
+        return services.smart_tyre_dashboard.getUser(query, true)
+            .then((userData) => {
+                if (!userData) {
+                    return Promise.reject({ key: 'msg', msg: 'User not found!' });
+                }
+                return bcrypt.compare(password, userData.password)
+                    .then((isMatch) => {
+                        if (!isMatch) {
+                            return Promise.reject({ key: 'msg', msg: 'Invalid password!' });
+                        }
+
+                        return services.smart_tyre_dashboard.updateUser(
+                            { _id: userData._id },
+                            { activeStatus: true }
+                        ).then((updatedUser) => {
+                                const token = jwtHelper.generateToken({
+                                    userId: updatedUser._id,
+                                    email: updatedUser.email,
+                                    role: updatedUser.role
+                                });
+
+                                const userObj = updatedUser.toObject();
+                                delete userObj.password;
+                                return res.json(response.JsonMsg(true, { user: userObj, token: token }, 'Login successful', 200));
+                        });
+                    });
+            })
+            .catch((err) => {
+                if (err && err.key === 'msg') {
+                    return res.json(response.JsonMsg(false, null, err.msg, 401));
+                }
+                return res.json(response.JsonMsg(false, null, err.message, 500));
+            });
+    },
+
     sellsInstallationsLineChart: (req, res) => {
         const type       = req.query.type;
         const fiscalYear = req.query.fiscal_year || null;

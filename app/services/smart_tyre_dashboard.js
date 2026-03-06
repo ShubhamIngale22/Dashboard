@@ -4,6 +4,62 @@ const smart_tyre_dashboard = require("../query-provider/smart_tyre_dashboard");
 const dateHelper=require('../helpers/date_helper');
 
 module.exports= {
+
+    addUser: (data) => {
+        let user= new model.user(data);
+        return user.save().then((result) => {
+            return Promise.resolve(result);
+        }).catch((err) => {
+            return Promise.reject(err);
+        });
+    },
+
+    getUser: (query, includePassword = false) => {
+        let q = model.user.findOne(query);
+        if (includePassword) {
+            q = q.select('+password');
+        }
+        return q
+            .then((data) => Promise.resolve(data))
+            .catch((err) => Promise.reject(err));
+    },
+
+    allUser: () => {
+        return model.user.find({}).then((data) => {
+            return Promise.resolve(data);
+        }).catch((err) => {
+            return Promise.reject(err);
+        });
+    },
+
+    updateUser: (query, update) => {
+        return model.user.findOneAndUpdate(
+            query,
+            { $set: update },
+            { returnDocument: "after" }
+        );
+    },
+
+    updateUserWithSave: async (query, updateData) => {
+        const user = await model.user.findOne(query);
+
+        if (!user) return null;
+        Object.keys(updateData).forEach((key) => {
+            user[key] = updateData[key];
+        });
+        return user.save();
+    },
+
+    deleteUser: (query) => {
+        return model.user.findOneAndDelete(query).then((data) => {
+            return Promise.resolve(data);
+        }).catch((err) => {
+            return Promise.reject(err);
+        });
+    },
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     sellsInstallationsLineChart: (installationMatchQuery, sellsMatchQuery, format, sortFormat) => {
 
         const installationsPromise = model.dealerInstallationCount.aggregate(

@@ -66,11 +66,16 @@ module.exports= {
         return model.role.findOne(query);
     },
 
+    // returns zone filter based on roleLevel
+    getZoneFilter : (user) => {
+        return user.roleLevel === 4 ? { zone: user.zone } : {};
+    },
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     sellsInstallationsLineChart: (installationMatchQuery, sellsMatchQuery, format, sortFormat) => {
 
-        const installationsPromise = model.dealerInstallationCount.aggregate(
+        const installationsPromise = model.dealerInstallationZoneCount.aggregate(
             smart_tyre_dashboard.getLineChartDealerInstallations(installationMatchQuery, format, sortFormat)
         );
 
@@ -99,7 +104,7 @@ module.exports= {
     },
 
     getInstallationCount: (query) => {
-        return model.dealerInstallationCount.aggregate(
+        return model.dealerInstallationZoneCount.aggregate(
             smart_tyre_dashboard.getInstallationCount(query)
         );
     },

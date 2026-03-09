@@ -14,12 +14,15 @@ const ROLE_PERMISSIONS = {
     3: [4],   // roleLevel 3 (Admin) can add roleLevel 4 (ZM)
     4: []     // ZM cannot add anyone
 };
+const VALID_ZONES = ['NZ', 'SZ', 'WZ', 'EZ', 'CZ', 'TZ'];
+
 module.exports = {
     'dbURL': dbURL,
     'PORT': PORT,
     'FILE_UPLOAD':FILE_UPLOAD,
     'JWT_SECRET':JWT_SECRET,
     'JWT_EXPIRE':JWT_EXPIRE,
-    'ROLE_PERMISSIONS':ROLE_PERMISSIONS
+    'ROLE_PERMISSIONS':ROLE_PERMISSIONS,
+    "VALID_ZONES":VALID_ZONES
 };
 

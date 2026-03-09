@@ -12,6 +12,29 @@ const {ROLE_PERMISSIONS} = require('../constant/constant');
 
 module.exports = {
 
+    getRoles: (req, res) => {
+        const loggedInUser = req.user;
+
+        const allowedLevels = ROLE_PERMISSIONS[loggedInUser.roleLevel] || [];
+        if (allowedLevels.length === 0) {
+            return res.json(response.JsonMsg(false, null, 'You are not authorized to add any role!', 403));
+        }
+        return services.smart_tyre_dashboard.getRoles({
+            roleLevel: { $in: allowedLevels },
+            isEnable: true
+        }).then((roles) => {
+            if (!roles || roles.length === 0) {
+                return Promise.reject({ key: 'msg', msg: 'No roles found!', status: 404 });
+            }
+            return res.json(response.JsonMsg(true, roles, 'Roles fetched successfully!', 200));
+        }).catch((err) => {
+            if (err && err.key === 'msg') {
+                return res.json(response.JsonMsg(false, null, err.msg, err.status || 400));
+            }
+            return res.json(response.JsonMsg(false, null, err.message, 500));
+        });
+    },
+
     addUser: (req, res) => {
         if (!req.body || !req.body.name || !req.body.email || !req.body.phone ||
             !req.body.password || !req.body.address || !req.body.roleId) {
@@ -19,65 +42,58 @@ module.exports = {
         }
 
         const { name, email, phone, password, address, roleId } = req.body;
-        const loggedInUser = req.user; // from JWT middleware
+        const loggedInUser = req.user;
 
-        // 1. Fetch logged-in user's role
-        return services.smart_tyre_dashboard.getRole({ roleId: loggedInUser.roleId, isEnable: true })
-            .then((loggedInRole) => {
-                if (!loggedInRole) {
-                    return Promise.reject({ key: 'msg', msg: 'Your role is invalid or disabled!', status: 403 });
+        // 1. Get allowed roleLevels for logged-in user
+        const allowedLevels = ROLE_PERMISSIONS[loggedInUser.roleLevel] || [];
+        if (allowedLevels.length === 0) {
+            return res.json(response.JsonMsg(false, null, 'You are not authorized to add any user!', 403));
+        }
+
+        // 2. Fetch target role — validate _id and roleLevel in one query
+        return services.smart_tyre_dashboard.getRole({
+            _id: roleId,
+            roleLevel: { $in: allowedLevels },
+            isEnable: true
+        }).then((targetRole) => {
+            if (!targetRole) {
+                return Promise.reject({ key: 'msg', msg: 'Invalid or unauthorized role!', status: 403 });
+            }
+            // 3. Check duplicate email or phone
+            return services.smart_tyre_dashboard.getUser({ $or: [{ email }, { phone }] }).then((existingUser) => {
+                if (existingUser) {
+                    const msg = existingUser.email === email
+                        ? error.EMAIL_EXISTS
+                        : error.PHONE_EXISTS;
+                    return Promise.reject({ key: 'msg', msg, status: 409 });
                 }
+                    // 4. customerId logic
+                    const customerId = loggedInUser.roleLevel === 1
+                        ? null
+                        : loggedInUser.userId;
 
-                // 2. Fetch target role
-                return services.smart_tyre_dashboard.getRole({ roleId: Number(roleId), isEnable: true })
-                    .then((targetRole) => {
-                        if (!targetRole) {
-                            return Promise.reject({ key: 'msg', msg: 'Invalid or disabled role!', status: 400 });
-                        }
-
-                        // 3.ROLE_PERMISSIONS check
-                        const allowedLevels = ROLE_PERMISSIONS[loggedInRole.roleLevel] || [];
-                        if (!allowedLevels.includes(targetRole.roleLevel)) {
-                            return Promise.reject({ key: 'msg', msg: 'You are not authorized to add this role!', status: 403 });
-                        }
-
-                        // 4. Check duplicate email or phone
-                        return services.smart_tyre_dashboard.getUser({ $or: [{ email }, { phone }] })
-                            .then((existingUser) => {
-                                if (existingUser) {
-                                    const msg = existingUser.email === email
-                                        ? error.EMAIL_EXISTS
-                                        : error.PHONE_EXISTS;
-                                    return Promise.reject({ key: 'msg', msg, status: 409 });
-                                }
-
-                                // 5. Build data
-                                const data = {
-                                    name,
-                                    email,
-                                    phone,
-                                    password,
-                                    address,
-                                    roleId:    targetRole.roleId,
-                                    roleLevel: targetRole.roleLevel,
-                                    roleName:  targetRole.roleName,
-                                };
-
-                                return services.smart_tyre_dashboard.addUser(data);
-                            });
+                        // 5. Build data — password hashed by pre("save") hook
+                    const data = {
+                            name,
+                            email,
+                            phone,
+                            password,
+                            address,
+                            roleId:     targetRole._id,
+                            roleLevel:  targetRole.roleLevel,
+                            roleName:   targetRole.roleName,
+                            customerId: customerId
+                        };
+                        return services.smart_tyre_dashboard.addUser(data);
                     });
-            })
-            .then((result) => {
-                if (!result) {
-                    return Promise.reject({ key: 'msg', msg: 'Unable to add user!', status: 500 });
-                }
-
-                const userObj = result.toObject();
-                delete userObj.password;
-
-                return res.json(response.JsonMsg(true, userObj, 'User added successfully!', 201));
-            })
-            .catch((err) => {
+        }).then((result) => {
+            if (!result) {
+                return Promise.reject({ key: 'msg', msg: 'Unable to add user!', status: 500 });
+            }
+            const userObj = result.toObject();
+            delete userObj.password;
+            return res.json(response.JsonMsg(true, userObj, 'User added successfully!', 201));
+            }).catch((err) => {
                 if (err && err.key === 'msg') {
                     return res.json(response.JsonMsg(false, null, err.msg, err.status || 400));
                 }
@@ -121,16 +137,51 @@ module.exports = {
                                 const userObj = updatedUser.toObject();
                                 delete userObj.password;
 
-                                return res.json(response.JsonMsg(true, { user: userObj, token: token }, 'Login successful', 200));
+                                return res.json(response.JsonMsg(true, { user: userObj, token }, 'Login successful', 200));
                             });
                     });
-            })
-            .catch((err) => {
+            }).catch((err) => {
                 if (err && err.key === 'msg') {
                     return res.json(response.JsonMsg(false, null, err.msg, err.status || 401));
                 }
                 return res.json(response.JsonMsg(false, null, err.message, 500));
             });
+    },
+
+    logoutUser: (req, res) => {
+        const loggedInUser = req.user; // from JWT middleware
+
+        return services.smart_tyre_dashboard.updateUser(
+            { _id: loggedInUser.userId },
+            {
+                activeStatus: false,
+                lastActiveDate: new Date()
+            }
+        ).then((updatedUser) => {
+            if (!updatedUser) {
+                return Promise.reject({ key: 'msg', msg: 'User not found!', status: 404 });
+            }
+            return res.json(response.JsonMsg(true, updatedUser, 'Logout successful', 200));
+        }).catch((err) => {
+            if (err && err.key === 'msg') {
+                return res.json(response.JsonMsg(false, null, err.msg, err.status || 400));
+            }
+            return res.json(response.JsonMsg(false, null, err.message, 500));
+        });
+    },
+
+    getUsers:(req, res) =>{
+        return services.smart_tyre_dashboard.allUser().then((userdata)=>{
+            if(!userdata){
+                return Promise.reject({ key: 'msg', msg: 'User not found!', status: 404 });
+            }
+            return res.json(response.JsonMsg(true,userdata, 'Login successful', 200));
+        }).catch((err) => {
+            if (err && err.key === 'msg') {
+                return res.json(response.JsonMsg(false, null, err.msg, err.status || 401));
+            }
+            return res.json(response.JsonMsg(false, null, err.message, 500));
+        });
     },
 
     sellsInstallationsLineChart: (req, res) => {

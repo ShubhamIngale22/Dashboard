@@ -5,6 +5,16 @@ const authentication=require('../utility/authentication');
 module.exports = (app, express) => {
     let api = express.Router();
 
+    api.post('/uploadDealerSellExcel', upload.single('file'), (req, res) => {
+        dashboard.uploadDealerSellExcel(req, res).then(()=>{});
+    });
+
+    api.post('/loginUser', (req, res) => {
+        dashboard.loginUser(req, res);
+    });
+
+    api.use(authentication); //
+
     api.get('/sellsInstallationsLineChart',(req, res) => {
         dashboard.sellsInstallationsLineChart(req, res);
     });
@@ -20,16 +30,6 @@ module.exports = (app, express) => {
     api.get('/getTop5SmartTyreInstallation',(req, res) => {
         dashboard.getTop5SmartTyreInstallation(req, res);
     });
-
-    api.post('/uploadDealerSellExcel', upload.single('file'), (req, res) => {
-        dashboard.uploadDealerSellExcel(req, res).then(()=>{});
-    });
-
-    api.post('/loginUser', (req, res) => {
-        dashboard.loginUser(req, res);
-    });
-
-    api.use(authentication); //
 
     api.get('/getRoles', (req, res) => {
         dashboard.getRoles(req, res);

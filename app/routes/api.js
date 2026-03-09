@@ -29,10 +29,22 @@ module.exports = (app, express) => {
         dashboard.loginUser(req, res);
     });
 
-    api.use(authentication);
+    api.use(authentication); //
+
+    api.get('/getRoles', (req, res) => {
+        dashboard.getRoles(req, res);
+    });
+
+    api.get('/getUsers', (req, res) => {
+        dashboard.getUsers(req, res);
+    });
 
     api.post('/addUser', (req, res) => {
         dashboard.addUser(req, res);
+    });
+
+    api.post('/logoutUser', (req, res) => {  // ← add this
+        dashboard.logoutUser(req, res);
     });
 
     return api;

@@ -8,98 +8,9 @@ const dateHelper = require("../helpers/date_helper");
 const error=require("../constant/messages");
 const bcrypt=require("bcrypt");
 const jwtHelper=require("../helpers/jwt_helper");
-const {ROLE_PERMISSIONS} = require('../constant/constant');
+const {ROLE_PERMISSIONS,VALID_ZONES} = require('../constant/constant');
 
 module.exports = {
-
-    getRoles: (req, res) => {
-        const loggedInUser = req.user;
-
-        const allowedLevels = ROLE_PERMISSIONS[loggedInUser.roleLevel] || [];
-        if (allowedLevels.length === 0) {
-            return res.json(response.JsonMsg(false, null, 'You are not authorized to add any role!', 403));
-        }
-        return services.smart_tyre_dashboard.getRoles({
-            roleLevel: { $in: allowedLevels },
-            isEnable: true
-        }).then((roles) => {
-            if (!roles || roles.length === 0) {
-                return Promise.reject({ key: 'msg', msg: 'No roles found!', status: 404 });
-            }
-            return res.json(response.JsonMsg(true, roles, 'Roles fetched successfully!', 200));
-        }).catch((err) => {
-            if (err && err.key === 'msg') {
-                return res.json(response.JsonMsg(false, null, err.msg, err.status || 400));
-            }
-            return res.json(response.JsonMsg(false, null, err.message, 500));
-        });
-    },
-
-    addUser: (req, res) => {
-        if (!req.body || !req.body.name || !req.body.email || !req.body.phone ||
-            !req.body.password || !req.body.address || !req.body.roleId) {
-            return res.json(response.JsonMsg(false, null, error.EMPTY_STRING, 400));
-        }
-
-        const { name, email, phone, password, address, roleId } = req.body;
-        const loggedInUser = req.user;
-
-        // 1. Get allowed roleLevels for logged-in user
-        const allowedLevels = ROLE_PERMISSIONS[loggedInUser.roleLevel] || [];
-        if (allowedLevels.length === 0) {
-            return res.json(response.JsonMsg(false, null, 'You are not authorized to add any user!', 403));
-        }
-
-        // 2. Fetch target role — validate _id and roleLevel in one query
-        return services.smart_tyre_dashboard.getRole({
-            _id: roleId,
-            roleLevel: { $in: allowedLevels },
-            isEnable: true
-        }).then((targetRole) => {
-            if (!targetRole) {
-                return Promise.reject({ key: 'msg', msg: 'Invalid or unauthorized role!', status: 403 });
-            }
-            // 3. Check duplicate email or phone
-            return services.smart_tyre_dashboard.getUser({ $or: [{ email }, { phone }] }).then((existingUser) => {
-                if (existingUser) {
-                    const msg = existingUser.email === email
-                        ? error.EMAIL_EXISTS
-                        : error.PHONE_EXISTS;
-                    return Promise.reject({ key: 'msg', msg, status: 409 });
-                }
-                    // 4. customerId logic
-                    const customerId = loggedInUser.roleLevel === 1
-                        ? null
-                        : loggedInUser.userId;
-
-                        // 5. Build data — password hashed by pre("save") hook
-                    const data = {
-                            name,
-                            email,
-                            phone,
-                            password,
-                            address,
-                            roleId:     targetRole._id,
-                            roleLevel:  targetRole.roleLevel,
-                            roleName:   targetRole.roleName,
-                            customerId: customerId
-                        };
-                        return services.smart_tyre_dashboard.addUser(data);
-                    });
-        }).then((result) => {
-            if (!result) {
-                return Promise.reject({ key: 'msg', msg: 'Unable to add user!', status: 500 });
-            }
-            const userObj = result.toObject();
-            delete userObj.password;
-            return res.json(response.JsonMsg(true, userObj, 'User added successfully!', 201));
-            }).catch((err) => {
-                if (err && err.key === 'msg') {
-                    return res.json(response.JsonMsg(false, null, err.msg, err.status || 400));
-                }
-                return res.json(response.JsonMsg(false, null, err.message, 500));
-            });
-    },
 
     loginUser: (req, res) => {
         if (!req.body || !req.body.emailOrPhone || !req.body.password) {
@@ -131,7 +42,8 @@ module.exports = {
                                     email:     updatedUser.email,
                                     roleId:    updatedUser.roleId,
                                     roleLevel: updatedUser.roleLevel,
-                                    roleName:  updatedUser.roleName
+                                    roleName:  updatedUser.roleName,
+                                    zone:      updatedUser.zone
                                 });
 
                                 const userObj = updatedUser.toObject();
@@ -146,6 +58,119 @@ module.exports = {
                 }
                 return res.json(response.JsonMsg(false, null, err.message, 500));
             });
+    },
+
+    addUser: (req, res) => {
+        if (!req.body || !req.body.name || !req.body.email || !req.body.phone ||
+            !req.body.password || !req.body.address || !req.body.roleId) {
+            return res.json(response.JsonMsg(false, null, error.EMPTY_STRING, 400));
+        }
+
+        const { name, email, phone, password, address, roleId, zone } = req.body;
+        const loggedInUser = req.user;
+
+        // 1. Get allowed roleLevels for logged-in user
+        const allowedLevels = ROLE_PERMISSIONS[loggedInUser.roleLevel] || [];
+        if (allowedLevels.length === 0) {
+            return res.json(response.JsonMsg(false, null, 'You are not authorized to add any user!', 403));
+        }
+
+        // 2. Fetch target role — validate _id and roleLevel in one query
+        return services.smart_tyre_dashboard.getRole({
+            _id: roleId,
+            roleLevel: { $in: allowedLevels },
+            isEnable: true
+        }).then((targetRole) => {
+            if (!targetRole) {
+                return Promise.reject({ key: 'msg', msg: 'Invalid or unauthorized role!', status: 403 });
+            }
+            if (targetRole.roleLevel === 4) {
+                if (!zone) {
+                    return Promise.reject({ key: 'msg', msg: 'Zone is required for ZM!', status: 400 });
+                }
+                if (!VALID_ZONES.includes(zone)) {
+                    return Promise.reject({ key: 'msg', msg: `Invalid zone! Must be one of: ${VALID_ZONES.join(', ')}`, status: 400 });
+                }
+            }
+
+            // 3. Check duplicate email or phone
+            return services.smart_tyre_dashboard.getUser({ $or: [{ email }, { phone }] }).then((existingUser) => {
+                if (existingUser) {
+                    const msg = existingUser.email === email
+                        ? error.EMAIL_EXISTS
+                        : error.PHONE_EXISTS;
+                    return Promise.reject({ key: 'msg', msg, status: 409 });
+                }
+                    // 4. customerId logic
+                    const customerId = loggedInUser.roleLevel === 1
+                        ? null
+                        : loggedInUser.userId;
+
+                        // 5. Build data — password hashed by pre("save") hook
+                    const data = {
+                            name,
+                            email,
+                            phone,
+                            password,
+                            address,
+                            roleId:     targetRole._id,
+                            roleLevel:  targetRole.roleLevel,
+                            roleName:   targetRole.roleName,
+                            customerId: customerId,
+                            zone:targetRole.roleLevel === 4 ? zone : null
+                        };
+                        return services.smart_tyre_dashboard.addUser(data);
+                    });
+        }).then((result) => {
+            if (!result) {
+                return Promise.reject({ key: 'msg', msg: 'Unable to add user!', status: 500 });
+            }
+            const userObj = result.toObject();
+            delete userObj.password;
+            return res.json(response.JsonMsg(true, userObj, 'User added successfully!', 201));
+            }).catch((err) => {
+                if (err && err.key === 'msg') {
+                    return res.json(response.JsonMsg(false, null, err.msg, err.status || 400));
+                }
+                return res.json(response.JsonMsg(false, null, err.message, 500));
+            });
+    },
+
+    getRoles: (req, res) => {
+        const loggedInUser = req.user;
+
+        const allowedLevels = ROLE_PERMISSIONS[loggedInUser.roleLevel] || [];
+        if (allowedLevels.length === 0) {
+            return res.json(response.JsonMsg(false, null, 'You are not authorized to add any role!', 403));
+        }
+        return services.smart_tyre_dashboard.getRoles({
+            roleLevel: { $in: allowedLevels },
+            isEnable: true
+        }).then((roles) => {
+            if (!roles || roles.length === 0) {
+                return Promise.reject({ key: 'msg', msg: 'No roles found!', status: 404 });
+            }
+            return res.json(response.JsonMsg(true, roles, 'Roles fetched successfully!', 200));
+        }).catch((err) => {
+            if (err && err.key === 'msg') {
+                return res.json(response.JsonMsg(false, null, err.msg, err.status || 400));
+            }
+            return res.json(response.JsonMsg(false, null, err.message, 500));
+        });
+    },
+
+    getUsers:(req, res) =>{
+        return services.smart_tyre_dashboard.allUser().then((userdata)=>{
+            if(!userdata){
+                return Promise.reject({ key: 'msg', msg: 'User not found!', status: 404 });
+            }
+            return res.json(response.JsonMsg(true,userdata, 'Login successful', 200));
+        }).catch((err) => {
+            if (err && err.key === 'msg') {
+                return res.json(response.JsonMsg(false, null, err.msg, err.status || 401));
+            }
+            return res.json(response.JsonMsg(false, null, err.message, 500));
+        });
     },
 
     logoutUser: (req, res) => {
@@ -170,24 +195,11 @@ module.exports = {
         });
     },
 
-    getUsers:(req, res) =>{
-        return services.smart_tyre_dashboard.allUser().then((userdata)=>{
-            if(!userdata){
-                return Promise.reject({ key: 'msg', msg: 'User not found!', status: 404 });
-            }
-            return res.json(response.JsonMsg(true,userdata, 'Login successful', 200));
-        }).catch((err) => {
-            if (err && err.key === 'msg') {
-                return res.json(response.JsonMsg(false, null, err.msg, err.status || 401));
-            }
-            return res.json(response.JsonMsg(false, null, err.message, 500));
-        });
-    },
-
     sellsInstallationsLineChart: (req, res) => {
         const type       = req.query.type;
         const fiscalYear = req.query.fiscal_year || null;
         const month      = req.query.month ? parseInt(req.query.month) : null;
+        const zoneFilter = services.smart_tyre_dashboard.getZoneFilter(req.user);
 
         let startDate, endDate, format, sortFormat;
 
@@ -224,12 +236,12 @@ module.exports = {
 
         // Two separate match queries — different date field names per collection
         const installationMatchQuery = endDate
-            ? { installationDate: { $gte: startDate, $lte: endDate } }
-            : { installationDate: { $gte: startDate } };
+            ? { installationDate: { $gte: startDate, $lte: endDate }, ...zoneFilter }
+            : { installationDate: { $gte: startDate }, ...zoneFilter };
 
         const sellsMatchQuery = endDate
-            ? { billingDate: { $gte: startDate, $lte: endDate } }
-            : { billingDate: { $gte: startDate } };
+            ? { billingDate: { $gte: startDate, $lte: endDate }, ...zoneFilter }
+            : { billingDate: { $gte: startDate }, ...zoneFilter };
 
         return services.smart_tyre_dashboard
             .sellsInstallationsLineChart(installationMatchQuery, sellsMatchQuery, format, sortFormat)
@@ -250,6 +262,7 @@ module.exports = {
         const type       = req.query.type;
         const fiscalYear = req.query.fiscal_year || null;
         const month      = req.query.month ? parseInt(req.query.month) : null;
+        const zoneFilter = services.smart_tyre_dashboard.getZoneFilter(req.user);
 
         let startDate, endDate;
 
@@ -274,14 +287,12 @@ module.exports = {
         }
         // Two separate match queries — different date field names per collection
         const installationMatchQuery = endDate
-            ? { installationDate: { $gte: startDate, $lte: endDate } }
-            : { installationDate: { $gte: startDate } };
-        Object.assign(installationMatchQuery,{zone:{$ne:null}});
+            ? { installationDate: { $gte: startDate, $lte: endDate }, zone: { $ne: null }, ...zoneFilter  }
+            : { installationDate: { $gte: startDate }, zone: { $ne: null }, ...zoneFilter };
 
         const sellsMatchQuery = endDate
-            ? { billingDate: { $gte: startDate, $lte: endDate } }
-            : { billingDate: { $gte: startDate } };
-        Object.assign(sellsMatchQuery,{zone:{$ne:null}});
+            ? { billingDate: { $gte: startDate, $lte: endDate }, zone: { $ne: null }, ...zoneFilter }
+            : { billingDate: { $gte: startDate }, zone: { $ne: null }, ...zoneFilter };
 
         const lastMonthLabel=moment().format("MMM-YYYY");
         const fyYearLabel=dateHelper.fyYearLabel();
@@ -305,6 +316,7 @@ module.exports = {
 
     dealerInstallationsSellsTable: (req, res) => {
         const now = moment();
+        const zoneFilter = services.smart_tyre_dashboard.getZoneFilter(req.user);
 
         const yesterdayStart = now.clone().subtract(1, "day").startOf("day").toDate();
         const yesterdayEnd   = now.clone().subtract(1, "day").endOf("day").toDate();
@@ -319,15 +331,15 @@ module.exports = {
         const mtdLabel = now.clone().format("MMM-YYYY");
         const ytdLabel    = dateHelper.fyYearLabel();
 
-        const yesterdayQuery    = { installationDate: { $gte: yesterdayStart, $lte: yesterdayEnd } };
-        const lastMonthQuery    = { installationDate: { $gte: lastMonthStart, $lte: lastMonthEnd } };
-        const mtdQuery    = { installationDate: { $gte: mtdStart, $lte: mtdEnd } };
-        const ytdQuery       = { installationDate: { $gte: ytdStart,    $lte: todayEnd     } };
+        const yesterdayQuery    = { installationDate: { $gte: yesterdayStart, $lte: yesterdayEnd }, ...zoneFilter };
+        const lastMonthQuery    = { installationDate: { $gte: lastMonthStart, $lte: lastMonthEnd }, ...zoneFilter };
+        const mtdQuery    = { installationDate: { $gte: mtdStart, $lte: mtdEnd }, ...zoneFilter };
+        const ytdQuery       = { installationDate: { $gte: ytdStart,    $lte: todayEnd     }, ...zoneFilter };
 
-        const yesterdaySellQuery = { billingDate: { $gte: yesterdayStart, $lte: yesterdayEnd } };
-        const lastMonthSellQuery    = { billingDate: { $gte: lastMonthStart, $lte: lastMonthEnd } };
-        const mtdSellQuery = { billingDate: { $gte: mtdStart, $lte: mtdEnd } };
-        const ytdSellQuery    = { billingDate: { $gte: ytdStart,    $lte: todayEnd     } };
+        const yesterdaySellQuery = { billingDate: { $gte: yesterdayStart, $lte: yesterdayEnd }, ...zoneFilter };
+        const lastMonthSellQuery    = { billingDate: { $gte: lastMonthStart, $lte: lastMonthEnd }, ...zoneFilter };
+        const mtdSellQuery = { billingDate: { $gte: mtdStart, $lte: mtdEnd }, ...zoneFilter };
+        const ytdSellQuery    = { billingDate: { $gte: ytdStart,    $lte: todayEnd     }, ...zoneFilter };
 
         return Promise.all([
             services.smart_tyre_dashboard.getInstallationCount(yesterdayQuery),
@@ -367,6 +379,7 @@ module.exports = {
 
     getTop5SmartTyreInstallation: (req, res) => {
         let filter = req.query.filter;
+        const zoneFilter = services.smart_tyre_dashboard.getZoneFilter(req.user);
         let type = req.query.type;
         const fiscalYear = req.query.fiscal_year || null;
         const month      = req.query.month ? parseInt(req.query.month) : null;
@@ -376,25 +389,25 @@ module.exports = {
         let limit;
 
         if(filter === "Dealers"){
-            query = {customerCode: {$ne: null}};
+            query = {customerCode: {$ne: null}, ...zoneFilter};
             groupId = { customerCode: "$customerCode", dealerShopName: "$dealerShopName" };
             projection = { customerCode: "$_id.customerCode", dealerShopName: "$_id.dealerShopName" };
             limit=5;
             count={$sum: 1};
         }else if(filter === "Zones"){
-            query ={zone: { $ne: null }};
+            query ={zone: { $ne: null }, ...zoneFilter};
             groupId = "$zone";
             projection =  { zone: "$_id" };
             limit=6;
             count= {$sum: "$installationCount"}
         }else if(filter === "Regions"){
-            query ={regionName: { $ne: null }, customerCode: {$ne: null}};
+            query ={regionName: { $ne: null }, customerCode: {$ne: null}, ...zoneFilter};
             groupId = "$regionName";
             projection =  { regionName: "$_id" };
             limit=6;
             count={$sum: 1};
         }else if(filter === "MakeModels"){
-            query ={manufacturerName: { $ne: null }, vehicleModelNo: { $ne: null }, customerCode: {$ne: null}};
+            query ={manufacturerName: { $ne: null }, vehicleModelNo: { $ne: null }, customerCode: {$ne: null}, ...zoneFilter};
             groupId = { make: "$manufacturerName", model: "$vehicleModelNo" };
             projection ={ make: "$_id.make", model: "$_id.model" };
             limit=5;

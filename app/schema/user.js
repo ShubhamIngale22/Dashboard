@@ -27,8 +27,9 @@ const userSchema = new mongoose.Schema(
             required: true
         },
         roleId: {
-            type: Number,
-            required: true,
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'role',
+            required: true
         },
         roleLevel: {
             type: Number,
@@ -39,9 +40,9 @@ const userSchema = new mongoose.Schema(
             required: true,
         },
         customerId: {
-            type: String,
-            required: true,
-            default: "69a9601eb9b332cccf6fe0ec"
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'user',
+            default: null
         },
         activeStatus: {
             type: Boolean,

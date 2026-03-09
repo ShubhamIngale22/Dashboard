@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
+const {VALID_ZONES} = require('../constant/constant');
 
 const userSchema = new mongoose.Schema(
     {
@@ -43,6 +44,11 @@ const userSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: 'user',
             default: null
+        },
+        zone: {
+            type: String,
+            enum: VALID_ZONES,
+            default: null  // null for roleLevel 1, 2, 3
         },
         activeStatus: {
             type: Boolean,

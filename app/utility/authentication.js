@@ -1,10 +1,10 @@
 const jwtHelper = require('../helpers/jwt_helper');
 const response = require('./api_handler');
+const services = require('../services');
 
 module.exports = (req, res, next) => {
-
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {  // ✅ check Bearer format
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return res.json(response.JsonMsg(false, null, 'Authorization token missing!', 401));
     }
 
@@ -17,9 +17,20 @@ module.exports = (req, res, next) => {
         const decoded = jwtHelper.verifyToken(token);
         req.user = decoded;
         next();
-
     } catch (err) {
         if (err.name === 'TokenExpiredError') {
+            // decode expired token to get userId
+            const decoded = jwtHelper.decodeToken(token);
+            if (decoded && decoded.userId) {
+                // auto logout in DB
+                services.smart_tyre_dashboard.updateUser(
+                    { _id: decoded.userId },
+                    {
+                        activeStatus: false,
+                        lastActiveDate: new Date()
+                    }
+                ).catch(e => console.error('Auto logout failed:', e));
+            }
             return res.json(response.JsonMsg(false, null, 'Token expired!', 401));
         }
         return res.json(response.JsonMsg(false, null, 'Invalid token!', 401));

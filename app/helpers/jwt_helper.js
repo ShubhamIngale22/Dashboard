@@ -12,5 +12,9 @@ module.exports = {
     },
     verifyToken: (token) => {
         return jwt.verify(token, JWT_SECRET);
+    },
+    // decode without verifying — safe to use on expired tokens
+    decodeToken: (token) => {
+        return jwt.decode(token);
     }
 };

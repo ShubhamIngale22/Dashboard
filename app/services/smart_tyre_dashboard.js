@@ -58,6 +58,10 @@ module.exports= {
         });
     },
 
+    getRoles: (query) => {
+        return model.role.find(query);
+    },
+
     getRole: (query) => {
         return model.role.findOne(query);
     },

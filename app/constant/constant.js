@@ -10,7 +10,7 @@ const FILE_UPLOAD = {
 };
 const ROLE_PERMISSIONS = {
     1: [2],   // roleLevel 1 (Super System Admin) can add roleLevel 2 (System Admin)
-    2: [3,4],   // roleLevel 2 (System Admin) can add roleLevel 3 (Admin)
+    2: [3,4],   // roleLevel 2 (System Admin) can add roleLevel 3 (Admin) and roleLevel 4 (ZM)
     3: [4],   // roleLevel 3 (Admin) can add roleLevel 4 (ZM)
     4: []     // ZM cannot add anyone
 };

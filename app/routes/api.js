@@ -39,6 +39,10 @@ module.exports = (app, express) => {
         dashboard.getUsers(req, res);
     });
 
+    api.get('/getAdmins', (req, res) => {
+        dashboard.getAdmins(req, res);
+    });
+
     api.post('/addUser', (req, res) => {
         dashboard.addUser(req, res);
     });

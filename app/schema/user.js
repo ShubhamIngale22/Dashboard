@@ -4,60 +4,20 @@ const {VALID_ZONES} = require('../constant/constant');
 
 const userSchema = new mongoose.Schema(
     {
-        name: {
-            type: String,
-            required: true,
-        },
-        email: {
-            type: String,
-            required: true,
-            unique: true,
-        },
-        password: {
-            type: String,
-            required: true,
-            select: false,
-        },
-        phone: {
-            type: String,
-            required: true,
-            unique: true,
-        },
-        address: {
-            type: String,
-            required: true
-        },
-        roleId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'role',
-            required: true
-        },
-        roleLevel: {
-            type: Number,
-            required: true,
-        },
-        roleName: {
-            type: String,
-            required: true,
-        },
-        customerId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'user',
-            default: null
-        },
-        zone: {
-            type: String,
-            enum: VALID_ZONES,
-            default: null  // null for roleLevel 1, 2, 3
-        },
-        activeStatus: {
-            type: Boolean,
-            default: false
-        },
-        lastActiveDate: {
-            type: Date,
-            default: () => new Date()
-        }
+        name: {type: String, required: true,},
+        email: {type: String, required: true, unique: true,},
+        password: {type: String, required: true, select: false,},
+        mobile: {type: String, required: true, unique: true,},
+        address: {type: String, required: true},
+        roleId: {type: mongoose.Schema.Types.ObjectId, ref: 'role', required: true},
+        roleLevel: {type: Number, required: true},
+        roleName: {type: String, required: true},
+        customerId: {type: mongoose.Schema.Types.ObjectId, ref: 'user', default: null},
+        createdBy: {type: mongoose.Schema.Types.ObjectId, ref: 'user', default: null},
+        zone: {type: String, enum: VALID_ZONES, default: null},
+        logout: {type: Boolean, default: true},
+        activeStatus: {type: Boolean, default: true},
+        lastActiveDate: {type: Date, default: () => new Date()}
     },
     { timestamps: true }
 );

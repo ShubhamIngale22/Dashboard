@@ -24,12 +24,8 @@ module.exports= {
             .catch((err) => Promise.reject(err));
     },
 
-    allUser: () => {
-        return model.user.find({}).then((data) => {
-            return Promise.resolve(data);
-        }).catch((err) => {
-            return Promise.reject(err);
-        });
+    getAllUser: (query = {}) => {
+        return model.user.find(query).select('-password');
     },
 
     updateUser: (query, update) => {

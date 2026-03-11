@@ -23,7 +23,7 @@ module.exports = {
         return services.smart_tyre_dashboard.getUser(query, true)
             .then((userData) => {
                 if (!userData) {
-                    return Promise.reject({ key: 'msg', msg: 'User not found!', status: 404 });
+                    return Promise.reject({ key: 'msg', msg: 'Please enter valid Email or Mobile!', status: 404 });
                 }
                 if (!userData.activeStatus) {
                     return Promise.reject({ key: 'msg', msg: 'Your account is disabled!', status: 403 });

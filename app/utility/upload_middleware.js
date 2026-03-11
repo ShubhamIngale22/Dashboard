@@ -16,15 +16,16 @@ const storage=multer.diskStorage({
 
 const fileFilter=(req,file,cb)=>{
     const allowedTypes = [
-        'text/csv',
         'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'text/csv',
+        'application/csv'
     ];
 
     if(allowedTypes.includes(file.mimetype)){
         cb(null,true)
     }else{
-        cb(new Error("Only excel/csv files are allowed to upload"),false);
+        cb(new Error("Only excel and csv files are allowed to upload"),false);
     }
 };
 

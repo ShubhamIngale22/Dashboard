@@ -505,9 +505,7 @@ module.exports = {
             }
         };
         if (!req.file) {
-            return res.json(
-                response.JsonMsg(false, null, "No file uploaded", 400)
-            );
+            return res.json(response.JsonMsg(false, null, "No file uploaded", 400));
         }
         let rows;
         try {
@@ -517,28 +515,20 @@ module.exports = {
 
             if (!rows.length) {
                 deleteFile(req.file.path);
-                return res.json(
-                    response.JsonMsg(false, null, "Empty file", 400)
-                );
+                return res.json(response.JsonMsg(false, null, "Empty file", 400));
             }
         } catch (err) {
             deleteFile(req.file.path);
-            return res.json(
-                response.JsonMsg(false, null, "Invalid Excel file", 400)
-            );
+            return res.json(response.JsonMsg(false, null, "Invalid Excel file", 400));
         }
         return services.smart_tyre_dashboard.uploadDealerSellExcel(rows)
             .then(result => {
                 deleteFile(req.file.path);
-                return res.json(
-                    response.JsonMsg(true, result.length, "Excel uploaded successfully", 200)
-                );
+                return res.json(response.JsonMsg(true, result.length, "Excel uploaded successfully", 200));
             })
             .catch(err => {
                 deleteFile(req.file.path);
-                return res.json(
-                    response.JsonMsg(false, null, err.message, 400)
-                );
+                return res.json(response.JsonMsg(false, null, err.message, 400));
             });
     }
 }

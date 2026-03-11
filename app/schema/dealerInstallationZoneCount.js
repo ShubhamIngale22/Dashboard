@@ -9,5 +9,6 @@ const installationZoneCountSchema = new Schema({
 }, {timestamps: true, versionKey: false});
 
 installationZoneCountSchema.index({zone: 1, installationDate: 1}, {unique: true});
-
+installationZoneCountSchema.index({installationDate: 1, zone: 1, installationCount: 1});
+installationZoneCountSchema.index({zone: 1, installationDate: 1, installationCount: 1});
 module.exports = mongoose.model("t_dealerInstallationZoneCount", installationZoneCountSchema);

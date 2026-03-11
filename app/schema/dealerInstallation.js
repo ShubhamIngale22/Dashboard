@@ -47,6 +47,7 @@ dealerInstallationSchema.index({ installationDate: 1, customerCode: 1 });// Top 
 dealerInstallationSchema.index({ installationDate: 1, customerCode: 1, manufacturerName: 1, vehicleModelNo: 1 });// Top 5 make/model — getTop5MakeModel
 dealerInstallationSchema.index({ installationDate: 1, customerCode: 1, regionName: 1 });// Top 5 regions — getTop5region
 dealerInstallationSchema.index({ installationDate: 1, customerCode: 1, zone: 1 });// Top 5 zones — getTop5zone
+dealerInstallationSchema.index({ installationDate: 1, installType: 1, customerCode: 1, zone: 1 }); // generateInstallationSummary cron job
 
 module.exports = mongoose.model('t_dealerInstallation', dealerInstallationSchema);
 

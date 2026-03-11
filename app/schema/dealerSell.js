@@ -27,6 +27,7 @@ const sellsBillingSchema = new Schema({
 sellsBillingSchema.index({ billingDate: 1 });// LineChart — getLineChartDealerSells
 sellsBillingSchema.index({ billingDate: 1, zone: 1 });// Zone-wise pie chart — getZoneWiseDealerSells
 sellsBillingSchema.index({ billingDate: 1, quantity: 1 });//summary Table
-
+sellsBillingSchema.index({ billingDate: 1, zone: 1, quantity: 1 });// Covers: getLineChartDealerSells, getZoneWiseDealerSells, getSellsCount when zone is in match
+sellsBillingSchema.index({ zone: 1, billingDate: 1, quantity: 1 });// Zone-wise bar chart — leads with zone (for getZoneWiseDealerSells groupBy zone)
 module.exports = mongoose.model('t_dealerSell', sellsBillingSchema);
 

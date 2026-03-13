@@ -228,6 +228,116 @@ module.exports = {
         })
     },
 
+    deleteUser: (req, res) => {
+        const userId = req.params.userId?.trim();
+        const loggedInUser = req.user;
+        if (!userId) {
+            return res.json(response.JsonMsg(false, null, error.EMPTY_STRING, 400));
+        }
+        return services.smart_tyre_dashboard.getUser({ _id: userId }).then((targetUser) => {
+            if (!targetUser) {
+                return Promise.reject({ key: 'msg', msg: 'User not found!', status: 404 });
+            }
+            // permission check
+            const allowedLevels = ROLE_PERMISSIONS[loggedInUser.roleLevel] || [];
+            if (!allowedLevels.includes(targetUser.roleLevel)) {
+                return Promise.reject({ key: 'msg', msg: 'You are not authorized to perform this action!', status: 403 });
+            }
+            // cannot delete yourself
+            if (targetUser._id.toString() === loggedInUser.userId.toString()) {
+                return Promise.reject({ key: 'msg', msg: 'You cannot delete yourself!', status: 400 });
+            }
+            // toggle activeStatus
+            const newStatus = !targetUser.activeStatus;
+            const msg = newStatus ? 'User reactivated successfully!' : 'User deleted successfully!';
+            let query={ _id: userId };
+            let update={ activeStatus: newStatus, lastActiveDate: new Date() };
+            return services.smart_tyre_dashboard.updateUser(query,update).then((updatedUser) => {
+                if (!updatedUser) {
+                    return Promise.reject({ key: 'msg', msg: 'Unable to perform action!', status: 500 });
+                }
+                return res.json(response.JsonMsg(true, null, msg, 200));
+            });
+        }).catch((err) => {
+            if (err && err.key === 'msg') {
+                return res.json(response.JsonMsg(false, null, err.msg, err.status || 400));
+            }
+            console.error('[deleteUser] Unexpected error:', err.message);
+            return res.json(response.JsonMsg(false, null, err.message, 500));
+        });
+    },
+
+    updateUser: (req, res) => {
+        const userId = req.params.userId?.trim();
+        const loggedInUser = req.user;
+        if (!userId) {
+            return res.json(response.JsonMsg(false, null, error.EMPTY_STRING, 400));
+        }
+        const { name, email, mobile, address, zone, password } = req.body;
+        return services.smart_tyre_dashboard.getUser({ _id: userId }).then((targetUser) => {
+            if (!targetUser) {
+                return Promise.reject({ key: 'msg', msg: 'User not found!', status: 404 });
+            }
+            // permission check
+            const allowedLevels = ROLE_PERMISSIONS[loggedInUser.roleLevel] || [];
+            if (!allowedLevels.includes(targetUser.roleLevel)) {
+                return Promise.reject({ key: 'msg', msg: 'You are not authorized to update this user!', status: 403 });
+            }
+            // zone validation — only for ZM
+            if (zone !== undefined) {
+                if (targetUser.roleLevel !== 4) {
+                    return Promise.reject({ key: 'msg', msg: 'Zone can only be set for ZM!', status: 400 });
+                }
+                if (!VALID_ZONES.includes(zone)) {
+                    return Promise.reject({ key: 'msg', msg: `Invalid zone! Must be one of: ${VALID_ZONES.join(', ')}`, status: 400 });
+                }
+            }
+            // check duplicate email/mobile (exclude current user)
+            const orConditions = [];
+            if (email) orConditions.push({ email });
+            if (mobile) orConditions.push({ mobile });
+
+            if (orConditions.length === 0) {
+                return { targetUser, existingUser: null };
+            }
+            let query={$or: orConditions, _id: { $ne: userId }}
+            return services.smart_tyre_dashboard.getUser(query).then((existingUser) => ({ targetUser, existingUser }));
+        }).then(({ targetUser, existingUser }) => {
+            if (existingUser) {
+                const msg = existingUser.email === email ? error.EMAIL_EXISTS : error.PHONE_EXISTS;
+                return Promise.reject({ key: 'msg', msg, status: 409 });
+            }
+            // build update object — only include provided fields
+            const updateData = {};
+            if (name    !== undefined) updateData.name    = name;
+            if (email   !== undefined) updateData.email   = email;
+            if (mobile  !== undefined) updateData.mobile  = mobile;
+            if (address !== undefined) updateData.address = address;
+            if (zone    !== undefined && targetUser.roleLevel === 4) updateData.zone = zone;
+
+            // password — use updateUserWithSave to trigger bcrypt pre-save hook
+            if (password) {
+                let query={ _id: userId };
+                let update={ ...updateData, password };
+                return services.smart_tyre_dashboard.updateUserWithSave(query,update);
+            }
+            return services.smart_tyre_dashboard.updateUser({ _id: userId }, updateData);
+        }).then((updatedUser) => {
+            if (!updatedUser) {
+                return Promise.reject({ key: 'msg', msg: 'Unable to update user!', status: 500 });
+            }
+            const userObj = updatedUser.toObject();
+            delete userObj.password;
+            return res.json(response.JsonMsg(true, userObj, 'User updated successfully!', 200));
+        }).catch((err) => {
+            if (err && err.key === 'msg') {
+                return res.json(response.JsonMsg(false, null, err.msg, err.status || 400));
+            }
+            console.error('[updateUser] Unexpected error:', err.message);
+            return res.json(response.JsonMsg(false, null, err.message, 500));
+        });
+    },
+
     logoutUser: (req, res) => {
         const loggedInUser = req.user; // from JWT middleware
 

@@ -9,6 +9,7 @@ const error=require("../constant/messages");
 const bcrypt=require("bcrypt");
 const jwtHelper=require("../helpers/jwt_helper");
 const {ROLE_PERMISSIONS,VALID_ZONES} = require('../constant/constant');
+const helpers= require("../helpers/helper");
 
 module.exports = {
 
@@ -44,7 +45,7 @@ module.exports = {
                                 roleLevel: updatedUser.roleLevel,
                                 roleName:  updatedUser.roleName,
                                 zone:      updatedUser.zone
-                                });
+                            });
                             const userObj = updatedUser.toObject();
                             delete userObj.password;
                             return res.json(response.JsonMsg(true, { user: userObj, token }, 'Login successful', 200));
@@ -360,58 +361,60 @@ module.exports = {
     sellsInstallationsLineChart: (req, res) => {
         const type       = req.query.type;
         const fiscalYear = req.query.fiscal_year || null;
-        const month      = req.query.month ? parseInt(req.query.month) : null;
+        const months     = helpers.parseMonths(req.query);
         const zoneFilter = services.smart_tyre_dashboard.getZoneFilter(req.user);
 
         let startDate, endDate, format, sortFormat;
+        let installationMatchQuery, sellsMatchQuery;
 
         if (type === "YTD") {
-            startDate=dateHelper.fyYearStart();
-            endDate = null;
+            startDate  = dateHelper.fyYearStart();
+            endDate    = null;
             format     = "%b-%Y";
             sortFormat = "%Y-%m";
 
+            installationMatchQuery = { installationDate: { $gte: startDate }, ...zoneFilter };
+            sellsMatchQuery        = { billingDate:      { $gte: startDate }, ...zoneFilter };
+
         } else if (type === "MTD") {
-            startDate = moment().startOf("month").toDate();
-            endDate = moment().endOf("month").toDate();
+            startDate  = moment().startOf("month").toDate();
+            endDate    = moment().endOf("month").toDate();
             format     = "%d-%b";
             sortFormat = "%Y-%m-%d";
+
+            installationMatchQuery = { installationDate: { $gte: startDate, $lte: endDate }, ...zoneFilter };
+            sellsMatchQuery        = { billingDate:      { $gte: startDate, $lte: endDate }, ...zoneFilter };
 
         } else if (type === "custom" && fiscalYear) {
             const startYear = parseInt(fiscalYear.split("-")[0]);
             const endYear   = startYear + 1;
 
-            if (month) {
-                const calendarMonth = month;
-                const calendarYear  = month >= 4 ? startYear : endYear;
-                startDate  = moment({ year: calendarYear, month: calendarMonth - 1, date: 1 }).toDate();
-                endDate    = moment(startDate).endOf("month").toDate();
-                format     = "%d-%b";
-                sortFormat = "%Y-%m-%d";
+            if (months.length > 0) {
+                // multiple months selected
+                format     = months.length === 1 ? "%d-%b" : "%b-%Y";
+                sortFormat = months.length === 1 ? "%Y-%m-%d" : "%Y-%m";
+
+                const instFilter = helpers.buildMultiMonthFilter(months, startYear, endYear, "installationDate");
+                const sellFilter = helpers.buildMultiMonthFilter(months, startYear, endYear, "billingDate");
+
+                installationMatchQuery = { ...instFilter, ...zoneFilter };
+                sellsMatchQuery        = { ...sellFilter, ...zoneFilter };
             } else {
-                startDate  = moment({ year: startYear, month: 3, date: 1 }).toDate();  // Apr 1
-                endDate    = moment({ year: endYear,   month: 2, date: 31 }).toDate(); // Mar 31
+                // full fiscal year
+                startDate  = moment({ year: startYear, month: 3, date: 1 }).toDate();
+                endDate    = moment({ year: endYear,   month: 2, date: 31 }).toDate();
                 format     = "%b-%Y";
                 sortFormat = "%Y-%m";
+
+                installationMatchQuery = { installationDate: { $gte: startDate, $lte: endDate }, ...zoneFilter };
+                sellsMatchQuery        = { billingDate:      { $gte: startDate, $lte: endDate }, ...zoneFilter };
             }
         }
-
-        // Two separate match queries — different date field names per collection
-        const installationMatchQuery = endDate
-            ? { installationDate: { $gte: startDate, $lte: endDate }, ...zoneFilter }
-            : { installationDate: { $gte: startDate }, ...zoneFilter };
-
-        const sellsMatchQuery = endDate
-            ? { billingDate: { $gte: startDate, $lte: endDate }, ...zoneFilter }
-            : { billingDate: { $gte: startDate }, ...zoneFilter };
 
         return services.smart_tyre_dashboard
             .sellsInstallationsLineChart(installationMatchQuery, sellsMatchQuery, format, sortFormat)
             .then((data) => {
-                const lineChartData = chartFormatter.combinedLineChart(
-                    data.installations,
-                    data.sells
-                );
+                const lineChartData = chartFormatter.combinedLineChart(data.installations, data.sells);
                 return res.json(response.JsonMsg(true, lineChartData, "Line-Chart data is fetched.", 200));
             })
             .catch((err) => {
@@ -423,57 +426,61 @@ module.exports = {
     zoneWiseInstallationsSellsBarChart: (req, res) => {
         const type       = req.query.type;
         const fiscalYear = req.query.fiscal_year || null;
-        const month      = req.query.month ? parseInt(req.query.month) : null;
+        const months     = helpers.parseMonths(req.query);
         const zoneFilter = services.smart_tyre_dashboard.getZoneFilter(req.user);
 
         let startDate, endDate;
+        let installationMatchQuery, sellsMatchQuery;
 
         if (type === "MTD") {
             startDate = moment().startOf("month").toDate();
-            endDate = moment().endOf("month").toDate();
+            endDate   = moment().endOf("month").toDate();
+
+            installationMatchQuery = { installationDate: { $gte: startDate, $lte: endDate }, zone: { $ne: null }, ...zoneFilter };
+            sellsMatchQuery        = { billingDate:      { $gte: startDate, $lte: endDate }, zone: { $ne: null }, ...zoneFilter };
+
         } else if (type === "custom" && fiscalYear) {
             const startYear = parseInt(fiscalYear.split("-")[0]);
             const endYear   = startYear + 1;
-            if (month) {
-                const calendarMonth = month;
-                const calendarYear  = month >= 4 ? startYear : endYear;
-                startDate  = moment({ year: calendarYear, month: calendarMonth - 1, date: 1 }).toDate();
-                endDate    = moment(startDate).endOf("month").toDate();
+
+            if (months.length > 0) {
+                const instFilter = helpers.buildMultiMonthFilter(months, startYear, endYear, "installationDate");
+                const sellFilter = helpers.buildMultiMonthFilter(months, startYear, endYear, "billingDate");
+
+                installationMatchQuery = { ...instFilter, zone: { $ne: null }, ...zoneFilter };
+                sellsMatchQuery        = { ...sellFilter, zone: { $ne: null }, ...zoneFilter };
             } else {
-                startDate  = moment({ year: startYear, month: 3, date: 1 }).toDate();  // Apr 1
-                endDate    = moment({ year: endYear,   month: 2, date: 31 }).toDate(); // Mar 31
+                startDate = moment({ year: startYear, month: 3, date: 1 }).toDate();
+                endDate   = moment({ year: endYear,   month: 2, date: 31 }).toDate();
+
+                installationMatchQuery = { installationDate: { $gte: startDate, $lte: endDate }, zone: { $ne: null }, ...zoneFilter };
+                sellsMatchQuery        = { billingDate:      { $gte: startDate, $lte: endDate }, zone: { $ne: null }, ...zoneFilter };
             }
-        }else{
-            startDate=dateHelper.fyYearStart();
-            endDate = null;
+        } else {
+            // YTD default
+            startDate = dateHelper.fyYearStart();
+
+            installationMatchQuery = { installationDate: { $gte: startDate }, zone: { $ne: null }, ...zoneFilter };
+            sellsMatchQuery        = { billingDate:      { $gte: startDate }, zone: { $ne: null }, ...zoneFilter };
         }
-        // Two separate match queries — different date field names per collection
-        const installationMatchQuery = endDate
-            ? { installationDate: { $gte: startDate, $lte: endDate }, zone: { $ne: null }, ...zoneFilter  }
-            : { installationDate: { $gte: startDate }, zone: { $ne: null }, ...zoneFilter };
 
-        const sellsMatchQuery = endDate
-            ? { billingDate: { $gte: startDate, $lte: endDate }, zone: { $ne: null }, ...zoneFilter }
-            : { billingDate: { $gte: startDate }, zone: { $ne: null }, ...zoneFilter };
+        const lastMonthLabel = moment().format("MMM-YYYY");
+        const fyYearLabel    = dateHelper.fyYearLabel();
 
-        const lastMonthLabel=moment().format("MMM-YYYY");
-        const fyYearLabel=dateHelper.fyYearLabel();
-
-        return services.smart_tyre_dashboard.zoneWiseInstallationsSellsBarChart(installationMatchQuery, sellsMatchQuery).then((data) => {
-            const { installations, sells } = data;
-            const barChartData ={
-                labels:{
-                    lastMonthLabel:lastMonthLabel,
-                    fyYearLabel:fyYearLabel
-                },
-                installations,
-                sells
-            }
-            return res.json(response.JsonMsg(true, barChartData, "Bar-Chart data is fetched", 200));
-        }).catch((err)=>{
-            console.error(err);
-            return res.json(response.JsonMsg(false, null , "Failed to fetch data", 500));
-        })
+        return services.smart_tyre_dashboard.zoneWiseInstallationsSellsBarChart(installationMatchQuery, sellsMatchQuery)
+            .then((data) => {
+                const { installations, sells } = data;
+                const barChartData = {
+                    labels: { lastMonthLabel, fyYearLabel },
+                    installations,
+                    sells
+                };
+                return res.json(response.JsonMsg(true, barChartData, "Bar-Chart data is fetched", 200));
+            })
+            .catch((err) => {
+                console.error(err);
+                return res.json(response.JsonMsg(false, null, "Failed to fetch data", 500));
+            });
     },
 
     dealerInstallationsSellsTable: (req, res) => {
@@ -540,72 +547,75 @@ module.exports = {
     },
 
     getTop5SmartTyreInstallation: (req, res) => {
-        let filter = req.query.filter;
+        const filter     = req.query.filter;
         const zoneFilter = services.smart_tyre_dashboard.getZoneFilter(req.user);
-        let type = req.query.type;
+        const type       = req.query.type;
         const fiscalYear = req.query.fiscal_year || null;
-        const month      = req.query.month ? parseInt(req.query.month) : null;
-        let startDate,endDate;
-        let query = {customerCode: {$ne: null}};
+        const months     = helpers.parseMonths(req.query);
+
+        let query = { customerCode: { $ne: null } };
         let groupId = {}, projection = {}, count = {};
         let limit;
 
-        if(filter === "Dealers"){
-            query = {customerCode: {$ne: null}, ...zoneFilter};
-            groupId = { customerCode: "$customerCode", dealerShopName: "$dealerShopName" };
+        if (filter === "Dealers") {
+            query      = { customerCode: { $ne: null }, ...zoneFilter };
+            groupId    = { customerCode: "$customerCode", dealerShopName: "$dealerShopName" };
             projection = { customerCode: "$_id.customerCode", dealerShopName: "$_id.dealerShopName" };
-            limit=5;
-            count={$sum: 1};
-        }else if(filter === "Zones"){
-            query ={zone: { $ne: null }, ...zoneFilter};
-            groupId = "$zone";
-            projection =  { zone: "$_id" };
-            limit=6;
-            count= {$sum: "$installationCount"}
-        }else if(filter === "Regions"){
-            query ={regionName: { $ne: null }, customerCode: {$ne: null}, ...zoneFilter};
-            groupId = "$regionName";
-            projection =  { regionName: "$_id" };
-            limit=6;
-            count={$sum: 1};
-        }else if(filter === "MakeModels"){
-            query ={manufacturerName: { $ne: null }, vehicleModelNo: { $ne: null }, customerCode: {$ne: null}, ...zoneFilter};
-            groupId = { make: "$manufacturerName", model: "$vehicleModelNo" };
-            projection ={ make: "$_id.make", model: "$_id.model" };
-            limit=5;
-            count={$sum: 1};
+            limit      = 5;
+            count      = { $sum: 1 };
+        } else if (filter === "Zones") {
+            query      = { zone: { $ne: null }, ...zoneFilter };
+            groupId    = "$zone";
+            projection = { zone: "$_id" };
+            limit      = 6;
+            count      = { $sum: "$installationCount" };
+        } else if (filter === "Regions") {
+            query      = { regionName: { $ne: null }, customerCode: { $ne: null }, ...zoneFilter };
+            groupId    = "$regionName";
+            projection = { regionName: "$_id" };
+            limit      = 6;
+            count      = { $sum: 1 };
+        } else if (filter === "MakeModels") {
+            query      = { manufacturerName: { $ne: null }, vehicleModelNo: { $ne: null }, customerCode: { $ne: null }, ...zoneFilter };
+            groupId    = { make: "$manufacturerName", model: "$vehicleModelNo" };
+            projection = { make: "$_id.make", model: "$_id.model" };
+            limit      = 5;
+            count      = { $sum: 1 };
         }
 
-        // here else is all time
         if (type === "MTD") {
-            startDate = moment().startOf("month").toDate();
-            endDate = moment().endOf("month").toDate();
-            Object.assign(query, {installationDate: {$gte: startDate, $lte: endDate}});
+            const start = moment().startOf("month").toDate();
+            const end   = moment().endOf("month").toDate();
+            Object.assign(query, { installationDate: { $gte: start, $lte: end } });
+
         } else if (type === "YTD") {
-            startDate = dateHelper.fyYearStart();
-            endDate = moment().endOf("day").toDate();
-            Object.assign(query, {installationDate: { $gte: startDate, $lte: endDate }});
+            const start = dateHelper.fyYearStart();
+            const end   = moment().endOf("day").toDate();
+            Object.assign(query, { installationDate: { $gte: start, $lte: end } });
+
         } else if (type === "custom" && fiscalYear) {
             const startYear = parseInt(fiscalYear.split("-")[0]);
             const endYear   = startYear + 1;
-            if (month) {
-                const calendarMonth = month;
-                const calendarYear  = month >= 4 ? startYear : endYear;
-                startDate  = moment({ year: calendarYear, month: calendarMonth - 1, date: 1 }).toDate();
-                endDate    = moment(startDate).endOf("month").toDate();
-                Object.assign(query, {installationDate: {$gte: startDate, $lte: endDate}});
+
+            if (months.length > 0) {
+                const dateFilter = helpers.buildMultiMonthFilter(months, startYear, endYear, "installationDate");
+                Object.assign(query, dateFilter);
             } else {
-                startDate  = moment({ year: startYear, month: 3, date: 1 }).toDate();  // Apr 1
-                endDate    = moment({ year: endYear,   month: 2, date: 31 }).toDate(); // Mar 31
-                Object.assign(query, {installationDate: {$gte: startDate, $lte: endDate}});
+                const start = moment({ year: startYear, month: 3, date: 1 }).toDate();
+                const end   = moment({ year: endYear,   month: 2, date: 31 }).toDate();
+                Object.assign(query, { installationDate: { $gte: start, $lte: end } });
             }
         }
-        return services.smart_tyre_dashboard.getTop5SmartTyreInstallation(query,groupId, projection,limit,count,filter).then((data)=>{
-            return res.json(response.JsonMsg(true,data, "Dealer Installations Data for top 5 regions", 200));
-        }).catch((err)=>{
-            console.error(err);
-            return res.json(response.JsonMsg(false, null , "Failed to fetch data", 500));
-        })
+
+        return services.smart_tyre_dashboard
+            .getTop5SmartTyreInstallation(query, groupId, projection, limit, count, filter)
+            .then((data) => {
+                return res.json(response.JsonMsg(true, data, "Dealer Installations Data for top 5 regions", 200));
+            })
+            .catch((err) => {
+                console.error(err);
+                return res.json(response.JsonMsg(false, null, "Failed to fetch data", 500));
+            });
     },
 
     uploadDealerSellExcel: (req, res) => {
@@ -640,5 +650,5 @@ module.exports = {
                 deleteFile(req.file.path);
                 return res.json(response.JsonMsg(false, null, err.message, 400));
             });
-    }
+    },
 }

@@ -5,7 +5,7 @@ module.exports={
     generateInstallationSummary: () => {
         let task = cron.schedule('*/1 * * * *', () => {  //  IST
             console.log('Running a task of SmartTyre Installation Summary.');
-            for (let i = 1; i <= 436; i++) {
+            for (let i = 0; i <= 444; i++) {
                 services.smart_tyre_dashboard.generateInstallationSummary(i);
             }
 

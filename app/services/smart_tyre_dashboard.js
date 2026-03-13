@@ -157,9 +157,7 @@ module.exports= {
             const today = moment();
 
             const startDate = today.clone().subtract(day, 'day').startOf('day').toDate();
-            console.log("StartDate is :",startDate);
             const endDate = today.clone().subtract(day, 'day').endOf('day').toDate();
-            console.log("endDate is :",endDate);
             let query = {
                 installationDate: {$gte: startDate, $lte: endDate},
                 installType: {$ne: "Online"},

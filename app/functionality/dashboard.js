@@ -272,8 +272,8 @@ module.exports = {
             const endYear   = startYear + 1;
 
             if (month) {
-                const calendarMonth = month <= 9 ? month + 3 : month - 9;
-                const calendarYear  = month <= 9 ? startYear : endYear;
+                const calendarMonth = month;
+                const calendarYear  = month >= 4 ? startYear : endYear;
                 startDate  = moment({ year: calendarYear, month: calendarMonth - 1, date: 1 }).toDate();
                 endDate    = moment(startDate).endOf("month").toDate();
                 format     = "%d-%b";
@@ -325,8 +325,8 @@ module.exports = {
             const startYear = parseInt(fiscalYear.split("-")[0]);
             const endYear   = startYear + 1;
             if (month) {
-                const calendarMonth = month <= 9 ? month + 3 : month - 9;
-                const calendarYear  = month <= 9 ? startYear : endYear;
+                const calendarMonth = month;
+                const calendarYear  = month >= 4 ? startYear : endYear;
                 startDate  = moment({ year: calendarYear, month: calendarMonth - 1, date: 1 }).toDate();
                 endDate    = moment(startDate).endOf("month").toDate();
             } else {
@@ -479,8 +479,8 @@ module.exports = {
             const startYear = parseInt(fiscalYear.split("-")[0]);
             const endYear   = startYear + 1;
             if (month) {
-                const calendarMonth = month <= 9 ? month + 3 : month - 9;
-                const calendarYear  = month <= 9 ? startYear : endYear;
+                const calendarMonth = month;
+                const calendarYear  = month >= 4 ? startYear : endYear;
                 startDate  = moment({ year: calendarYear, month: calendarMonth - 1, date: 1 }).toDate();
                 endDate    = moment(startDate).endOf("month").toDate();
                 Object.assign(query, {installationDate: {$gte: startDate, $lte: endDate}});

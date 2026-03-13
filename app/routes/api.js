@@ -47,6 +47,14 @@ module.exports = (app, express) => {
         dashboard.uploadDealerSellExcel(req, res).then(()=>{});
     });
 
+    api.delete('/deleteUser/:userId',(req,res) => {
+        dashboard.deleteUser(req,res);
+    });
+
+    api.put('/updateUser/:userId',(req,res) => {
+        dashboard.updateUser(req,res);
+    });
+
     api.post('/logoutUser', (req, res) => {  // ← add this
         dashboard.logoutUser(req, res);
     });
